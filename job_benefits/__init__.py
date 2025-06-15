@@ -1,3 +1,4 @@
+import logging
 from otree.api import *
 
 # Define Constants, Subsession, Group, Player first
@@ -22,16 +23,17 @@ class Constants(BaseConstants):
 
 class Subsession(BaseSubsession):
     def creating_session(self):
+        import random
         for p in self.get_players():
-            # Check if 'treatment_order' exists in participant.vars to avoid overwriting
-            # if session is reloaded or if the participant object persists across apps.
-            # This ensures the order is set only once per participant per session.
             if 'treatment_order' not in p.participant.vars:
-                import random
-                treatments = list(Constants.TREATMENTS) # Make a mutable copy
-                random.shuffle(treatments) # Shuffle treatments for random order
+                treatments = list(Constants.TREATMENTS)
+                random.shuffle(treatments)
                 p.participant.vars['treatment_order'] = treatments
-            p.treatment = p.participant.vars['treatment_order'][self.round_number - 1]
+
+
+        # Now we populate p.treatment from the treatment order immediately:
+        for p in self.get_players():
+            p.treatment = p.participant.vars['treatment_order'][p.round_number - 1]
 
 
 class Group(BaseGroup):
@@ -97,48 +99,51 @@ class ValuePerception(Page):
         # This ensures the page is only shown in the first round.
         return self.round_number == 1
 
+    # LOGGING POINT #1: Check data at the end of the previous page
+    # def before_next_page(self, timeout_happened):
+        # logging.info(f"--- before_next_page (from ValuePerception, R{self.round_number}): CHECKING Player {self.id_in_group}. Treatment is '{self.treatment}' ---")
+
+
 class JobOffer(Page):
     form_model = 'player'
     form_fields = ['accept_offer']
 
-    def vars_for_template(self):
-        self.treatment = ""
-        treatment = self.treatment
-        base = Constants.BASE_SALARY
-        cash = Constants.CASH_BONUS
-        perks = Constants.NON_MONETARY_PERKS
-
-        bonus_desc = "" # Initialize bonus_desc
-
-        if treatment == 'Cash Bonus':
-            bonus_desc = f"Cash bonus of €{cash}"
-        elif treatment == 'Non-Monetary Perk':
+    def vars_for_template(self): # <--- This line needs to be indented
+        # --- FIX: Ensure treatment_order exists before accessing it ---
+        if 'treatment_order' not in self.participant.vars:
             import random
-            perk = random.choice(perks)
-            self.perk_offered = perk  # Store the specific perk offered on the player object
-            bonus_desc = f"Non-monetary perk: {perk}"
+            treatments = list(Constants.TREATMENTS)
+            random.shuffle(treatments)
+            self.participant.vars['treatment_order'] = treatments
+        # STEP 1: Derive the treatment directly from the reliable source of truth.
+        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+
+        bonus_desc = ""
+        if treatment == 'Cash Bonus':
+            bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
+        elif treatment == 'Non-Monetary Perk':
+            # STEP 2: To ensure the perk doesn't change on page refresh,
+            # we set it once and save it directly to its model field.
+            # This check runs every time the page loads, but the code inside only runs once.
+            if not self.perk_offered:
+                 self.perk_offered = random.choice(Constants.NON_MONETARY_PERKS)
+            bonus_desc = f"Non-monetary perk: {self.perk_offered}"
         elif treatment == 'Choice':
-            bonus_desc = f"You can choose either a cash bonus of €{cash} or a non-monetary perk (Gym Membership or Work Bike)."
-        else: # Handle unexpected treatment values
-            bonus_desc = "No specific bonus offered for this treatment type."
+            bonus_desc = f"You can choose either a cash bonus of €{Constants.CASH_BONUS} or a non-monetary perk (Gym Membership or Work Bike)."
 
         return dict(
-            base_salary=base,
+            base_salary=Constants.BASE_SALARY,
             treatment=treatment,
             bonus_desc=bonus_desc,
         )
-
-    def before_next_page(self, timeout_happened): 
-        if self.treatment == 'Choice' and self.accept_offer:
-            # Correct way to redirect within the same app
-            self._redirect_to_sibling_page('BonusChoice') 
-
 class BonusChoice(Page):
     form_model = 'player'
     form_fields = ['choice_bonus']
 
     def is_displayed(self):
-        return self.treatment == 'Choice' and self.accept_offer
+        # This page's display logic must also use the reliable source of truth.
+        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        return treatment == 'Choice' and self.field_maybe_none('accept_offer') is True
 
 
 class JobTiles(Page):
