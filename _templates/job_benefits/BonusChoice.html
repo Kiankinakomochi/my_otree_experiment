@@ -5,12 +5,100 @@
 {% load otree %}
 
 {% block content %}
-    <h2>Choose Your Bonus</h2>
-    <p>You accepted the job offer with a choice of bonuses. Please select your preferred bonus:</p>
+    <style>
+        /* Basic Styling for the Page */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
 
-    <form method="post">
-        {{ form.choice_bonus }}
-        <br>
-        <button type="submit">Submit</button>
-    </form>
+        /* Container for the Content */
+        .otree-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            margin: 30px auto;
+            text-align: center; /* Center the content within the container */
+        }
+
+        h2 {
+            color: #0056b3;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        p {
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        strong {
+            color: #0056b3; /* Highlight strong text */
+        }
+
+        /* Form and Radio Button Styling */
+        form {
+            margin-top: 30px;
+            text-align: left; /* Align radio buttons to the left within the form */
+            display: inline-block; /* Helps center the block of choices */
+        }
+
+        .form-group { /* OTree's default wrapper for form fields */
+            margin-bottom: 15px;
+        }
+
+        .form-check-input { /* Default class for radio buttons/checkboxes in OTree forms */
+            transform: scale(1.4); /* Make radio buttons larger */
+            margin-right: 10px;
+            vertical-align: middle; /* Align radio button vertically with text */
+        }
+
+        .form-check-label { /* Default class for labels associated with form inputs */
+            font-size: 1.1em;
+            vertical-align: middle; /* Align label vertically with radio button */
+            cursor: pointer; /* Indicate it's clickable */
+            display: inline-block; /* Ensure it stays next to the radio button */
+        }
+
+        /* Button Styling */
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+    <div class="otree-content">
+        <h2>Choose Your Bonus</h2>
+        <p>You accepted the job offer with a choice of bonuses. Please select your preferred bonus:</p>
+
+        <form method="post">
+            {# OTree renders radio buttons with specific classes, let's target them #}
+            {{ form.choice_bonus }}
+            <br>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Bonus Choice page loaded.');
+        });
+    </script>
 {% endblock %}

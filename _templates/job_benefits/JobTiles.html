@@ -5,19 +5,158 @@
 {% load otree %}
 
 {% block content %}
-    <h2>Select Your Preferred Job</h2>
-    <form method="post">
-        {% for item in jobs_with_indices %} {# Iterate over the prepared list #}
-            <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px;">
-                <label>
-                    <input type="radio" name="chosen_job_tile" value="{{ item.index }}" required> {# Use item.index #}
-                    <strong>{{ item.data.title }}</strong><br> {# Access job data via item.data #}
-                    Wage: €{{ item.data.wage }}<br>
-                    Benefits: {{ item.data.benefits }}
+    <style>
+        /* Basic Styling for the Page */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
 
-                </label>
-            </div>
-        {% endfor %}
-        <button type="submit">Submit</button>
-    </form>
+        /* Container for the Content */
+        .otree-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 800px; /* Slightly wider for job tiles */
+            margin: 30px auto;
+            text-align: center;
+        }
+
+        h2 {
+            color: #0056b3;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        /* Job Tile Specific Styling */
+        .job-tile { /* Replaced inline style with a class for better control */
+            background-color: #fdfdfd;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-align: left; /* Align text within each tile to the left */
+            transition: all 0.2s ease-in-out; /* Smooth transition for hover/selection */
+            cursor: pointer;
+        }
+
+        .job-tile:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px); /* Slight lift on hover */
+        }
+
+        /* Style for when a job tile's radio button is checked */
+        .job-tile input[type="radio"]:checked + label {
+            /* Styles for the label when its associated radio is checked */
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .job-tile input[type="radio"]:checked ~ strong {
+             /* Target the strong tag directly following the checked radio's label */
+             color: #0056b3; /* Keep consistency */
+        }
+
+
+        .job-tile label {
+            display: flex; /* Use flexbox for alignment of radio and text */
+            align-items: flex-start; /* Align items to the top (radio and text) */
+            cursor: pointer;
+            font-size: 1.1em;
+            width: 100%; /* Make label take full width of the tile */
+            padding: 0; /* Remove default label padding */
+        }
+
+        .job-tile input[type="radio"] {
+            transform: scale(1.4); /* Make radio button larger */
+            margin-right: 15px;
+            margin-top: 3px; /* Align radio button with text better */
+            flex-shrink: 0; /* Prevent radio button from shrinking */
+        }
+
+        .job-tile strong {
+            font-size: 1.2em;
+            display: block; /* Ensure title is on its own line */
+            margin-bottom: 5px;
+            color: #333; /* Default color for strong */
+        }
+
+        .job-tile p { /* Style for wage/benefits text within tiles if you put them in <p> tags later */
+            margin: 0 0 5px 0;
+            font-size: 1em;
+        }
+
+        /* Button Styling */
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+    <div class="otree-content">
+        <h2>Select Your Preferred Job</h2>
+        <form method="post">
+            {% for item in jobs_with_indices %}
+                {# Apply the new .job-tile class here #}
+                <div class="job-tile">
+                    <label>
+                        <input type="radio" name="chosen_job_tile" value="{{ item.index }}" required>
+                        <div> {# Wrap text content to manage flex layout #}
+                            <strong>{{ item.data.title }}</strong><br>
+                            Wage: €{{ item.data.wage }}<br>
+                            Benefits: {{ item.data.benefits }}
+                        </div>
+                    </label>
+                </div>
+            {% endfor %}
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Job Tiles page loaded.');
+
+            // Add a class to the selected job tile when its radio button is checked
+            const jobTiles = document.querySelectorAll('.job-tile');
+
+            jobTiles.forEach(tile => {
+                const radio = tile.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.addEventListener('change', function() {
+                        // Remove 'selected-tile' class from all tiles first
+                        jobTiles.forEach(t => t.classList.remove('selected-tile'));
+
+                        // Add 'selected-tile' class to the currently checked tile
+                        if (this.checked) {
+                            tile.classList.add('selected-tile');
+                        }
+                    });
+
+                    // Set initial state on page load if a radio button is pre-selected (e.g., from a back button)
+                    if (radio.checked) {
+                        tile.classList.add('selected-tile');
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}

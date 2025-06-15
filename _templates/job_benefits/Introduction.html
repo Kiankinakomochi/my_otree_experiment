@@ -5,10 +5,70 @@
 {% load otree %}
 
 {% block content %}
-    <h2>Welcome to the Job Benefits Experiment</h2>
-    <p>{{ instructions }}</p>
+    <style>
+        /* Basic Styling for the Page */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
 
-    <form method="post">
-        <button type="submit">Start</button>
-    </form>
+        /* Container for the Content */
+        .otree-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            margin: 30px auto;
+            text-align: center; /* Center the content within the container */
+        }
+
+        h2 {
+            color: #0056b3;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        p {
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        /* Button Styling */
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+    <div class="otree-content"> {# Added a div to apply styling easily #}
+        <h2>Welcome to the Job Benefits Experiment</h2>
+        <p>{{ instructions }}</p>
+
+        <form method="post">
+            <button type="submit">Start</button>
+        </form>
+    </div>
+
+    <script>
+        // Simple JavaScript for an alert on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // alert('Welcome! Please read the instructions carefully.');
+            console.log('Page loaded and ready for the experiment.');
+        });
+    </script>
 {% endblock %}

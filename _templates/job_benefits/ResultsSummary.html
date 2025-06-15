@@ -5,31 +5,117 @@
 {% load otree %}
 
 {% block content %}
-    <h2>Summary of Your Choices</h2>
+    <style>
+        /* Basic Styling for the Page */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
 
-    <h3>Job Offers Accepted:</h3>
-    <ul>
-    {% for item in accepted_treatments %}
-        <li>
-            {{ item.treatment }}:
-            {% if item.accepted %}
-                Accepted
-            {% else %}
-                Rejected
-            {% endif %}
-            {% if item.bonus_info %}
-                (Bonus chosen: {{ item.bonus_info }})
-            {% endif %}
-        </li>
-    {% endfor %}
-    </ul>
+        /* Container for the Content */
+        .otree-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            margin: 30px auto;
+            text-align: center; /* Center the content within the container */
+        }
 
-    {% if chosen_job %}
-        <h3>Your Final Preferred Job:</h3>
-        <p><strong>{{ chosen_job.title }}</strong></p>
-        <p>Wage: €{{ chosen_job.wage }}</p>
-        <p>Benefits: {{ chosen_job.benefits }}</p>
-    {% else %}
-        <p>You did not select a preferred job.</p>
-    {% endif %}
+        h2 {
+            color: #0056b3;
+            margin-bottom: 25px;
+            font-size: 2.2em; /* Slightly larger for summary title */
+        }
+
+        h3 {
+            color: #007bff;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+            border-bottom: 2px solid #e9ecef; /* Subtle underline */
+            padding-bottom: 5px;
+            display: inline-block; /* Make underline fit content */
+        }
+
+        p {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: #0056b3;
+        }
+
+        ul {
+            list-style-type: none; /* Remove default bullet points */
+            padding: 0;
+            margin-top: 15px;
+        }
+
+        li {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            margin-bottom: 10px;
+            padding: 12px 15px;
+            border-radius: 5px;
+            text-align: left; /* Align list items to the left */
+            font-size: 1.05em;
+            color: #495057;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        li .accepted {
+            color: #28a745; /* Green for accepted */
+            font-weight: bold;
+        }
+
+        li .rejected {
+            color: #dc3545; /* Red for rejected */
+            font-weight: bold;
+        }
+    </style>
+
+    <div class="otree-content">
+        <h2>Summary of Your Choices</h2>
+
+        <h3>Job Offers Accepted:</h3>
+        <ul>
+        {% for item in accepted_treatments %}
+            <li>
+                <span {% if item.accepted %}class="accepted"{% else %}class="rejected"{% endif %}>
+                    {{ item.treatment }}:
+                    {% if item.accepted %}
+                        Accepted
+                    {% else %}
+                        Rejected
+                    {% endif %}
+                </span>
+                {% if item.bonus_info %}
+                    (Bonus chosen: **{{ item.bonus_info }}**)
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+
+        {% if chosen_job %}
+            <h3>Your Final Preferred Job:</h3>
+            <p><strong>{{ chosen_job.title }}</strong></p>
+            <p>Wage: €{{ chosen_job.wage }}</p>
+            <p>Benefits: {{ chosen_job.benefits }}</p>
+        {% else %}
+            <p>You did not select a preferred job.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Results Summary page loaded.');
+        });
+    </script>
 {% endblock %}
