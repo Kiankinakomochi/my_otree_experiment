@@ -55,6 +55,25 @@ class Player(BasePlayer):
     )
     treatment = models.StringField() # This must be defined here as it's used in Subsession.creating_session
 
+    # New fields for willingness to pay questionnaire
+    # Use Currency or FloatField for monetary values
+    # Make them optional by setting blank=True and null=True
+    # Add min and max values for data validation
+    # Use Currency field if you want oTree to handle currency formatting automatically
+    # Otherwise, FloatField is fine if you want to handle formatting yourself or
+    # if the input is not strictly monetary (e.g., could be 0 for not willing to pay)
+    willingness_to_pay_gym = models.CurrencyField(
+        label="What is the maximum amount you would be willing to pay per year for a premium gym membership (access to all facilities, classes, etc.)?",
+        blank=True,
+        min=0, # Participants should not be able to enter negative values
+        max=10000, # Set a reasonable maximum to prevent typos (adjust as needed)
+    )
+    willingness_to_pay_bike = models.CurrencyField(
+        label="What is the maximum amount you would be willing to pay per year for a work bicycle (including maintenance and insurance)?",
+        blank=True,
+        min=0, # Participants should not be able to enter negative values
+        max=10000, # Set a reasonable maximum to prevent typos (adjust as needed)
+    )
 
 doc = """
 Your app description
@@ -71,7 +90,8 @@ class Introduction(Page):
         )
     
 class ValuePerception(Page):
-    pass
+    form_model = 'player'
+    form_fields = ['willingness_to_pay_gym', 'willingness_to_pay_bike']
 
 class JobOffer(Page):
     form_model = 'player'
@@ -164,6 +184,9 @@ class ResultsSummary(Page):
         return dict(
             accepted_treatments=accepted_treatments,
             chosen_job=chosen_job,
+            # Pass the willingness to pay values to the results summary
+            willingness_to_pay_gym=self.willingness_to_pay_gym,
+            willingness_to_pay_bike=self.willingness_to_pay_bike,
         )
 
 page_sequence = [Introduction, JobOffer, BonusChoice, JobTiles, ResultsSummary]
