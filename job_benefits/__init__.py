@@ -195,13 +195,17 @@ class ResultsSummary(Page):
         chosen_job = None
         if self.chosen_job_tile is not None:
             chosen_job = Constants.JOB_TILES[self.chosen_job_tile]
+
+        # Get the player object from Round 1 to access WTP values
+        # self.player.in_round(1) retrieves the player object for the current participant in round 1.
+        player_round_1 = self.in_round(1) 
             
         return dict(
             accepted_treatments=accepted_treatments,
             chosen_job=chosen_job,
-            # Pass the willingness to pay values to the results summary
-            willingness_to_pay_gym=self.willingness_to_pay_gym,
-            willingness_to_pay_bike=self.willingness_to_pay_bike,
+            # Pass the willingness to pay values from the player object of Round 1
+            willingness_to_pay_gym=player_round_1.willingness_to_pay_gym,
+            willingness_to_pay_bike=player_round_1.willingness_to_pay_bike,
         )
 
 page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles, ResultsSummary]
