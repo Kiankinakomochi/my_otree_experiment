@@ -100,7 +100,7 @@
                 <p>
                     <strong>Gym Membership:</strong> What is the maximum amount you would be willing to pay <b>per year</b> for a premium gym membership (access to all facilities, classes, etc.)?
                 </p>
-                <label for="{{ form.willingness_to_pay_gym.id_for_label }}" class="form-label">€</label>
+                {# Remove the manual label and rely on formfield to render both label and input #}
                 {{ formfield player.willingness_to_pay_gym }}
             </div>
 
@@ -108,7 +108,7 @@
                 <p>
                     <strong>Work Bicycle:</strong> What is the maximum amount you would be willing to pay <b>per year</b> for a work bicycle (including maintenance and insurance)?
                 </p>
-                <label for="{{ form.willingness_to_pay_bike.id_for_label }}" class="form-label">€</label>
+                {# Remove the manual label and rely on formfield to render both label and input #}
                 {{ formfield player.willingness_to_pay_bike }}
             </div>
 

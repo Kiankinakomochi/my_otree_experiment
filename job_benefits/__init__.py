@@ -93,6 +93,10 @@ class ValuePerception(Page):
     form_model = 'player'
     form_fields = ['willingness_to_pay_gym', 'willingness_to_pay_bike']
 
+    def is_displayed(self):
+        # This ensures the page is only shown in the first round.
+        return self.round_number == 1
+
 class JobOffer(Page):
     form_model = 'player'
     form_fields = ['accept_offer']
@@ -190,4 +194,4 @@ class ResultsSummary(Page):
         )
 
 # Adjust the page_sequence to include ValuePerception
-page_sequence = [Introduction, JobOffer, BonusChoice, ValuePerception, JobTiles, ResultsSummary]
+page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles, ResultsSummary]
