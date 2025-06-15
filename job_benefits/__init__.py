@@ -193,5 +193,4 @@ class ResultsSummary(Page):
             willingness_to_pay_bike=self.willingness_to_pay_bike,
         )
 
-# Adjust the page_sequence to include ValuePerception
 page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles, ResultsSummary]
