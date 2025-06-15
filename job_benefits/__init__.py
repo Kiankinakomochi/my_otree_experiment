@@ -1,5 +1,6 @@
 import logging
 from otree.api import *
+import random # Import random here as well if not already present
 
 # Define Constants, Subsession, Group, Player first
 class Constants(BaseConstants):
@@ -23,7 +24,7 @@ class Constants(BaseConstants):
 
 class Subsession(BaseSubsession):
     def creating_session(self):
-        import random
+        # Initialize treatment order if not already done (for all players across all rounds)
         for p in self.get_players():
             if 'treatment_order' not in p.participant.vars:
                 treatments = list(Constants.TREATMENTS)
@@ -34,6 +35,8 @@ class Subsession(BaseSubsession):
         # Now we populate p.treatment from the treatment order immediately:
         for p in self.get_players():
             p.treatment = p.participant.vars['treatment_order'][p.round_number - 1]
+
+            
 
 
 class Group(BaseGroup):
@@ -111,22 +114,25 @@ class JobOffer(Page):
     def vars_for_template(self): # <--- This line needs to be indented
         # --- FIX: Ensure treatment_order exists before accessing it ---
         if 'treatment_order' not in self.participant.vars:
-            import random
             treatments = list(Constants.TREATMENTS)
             random.shuffle(treatments)
             self.participant.vars['treatment_order'] = treatments
         # STEP 1: Derive the treatment directly from the reliable source of truth.
         treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        self.treatment = treatment  # Store the treatment in the player instance for later usefi
 
         bonus_desc = ""
         if treatment == 'Cash Bonus':
             bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
         elif treatment == 'Non-Monetary Perk':
-            # STEP 2: To ensure the perk doesn't change on page refresh,
-            # we set it once and save it directly to its model field.
-            # This check runs every time the page loads, but the code inside only runs once.
-            if not self.perk_offered:
-                 self.perk_offered = random.choice(Constants.NON_MONETARY_PERKS)
+            # --- FIX: Set perk_offered here for Non-Monetary Perk treatment ---
+            if self.treatment == 'Non-Monetary Perk':
+                self.perk_offered = random.choice(Constants.NON_MONETARY_PERKS)
+            else:
+                # Ensure it's explicitly set to None or empty string if not a non-monetary perk
+                # This prevents it from holding a value from a previous round if a player
+                # switches from 'Non-Monetary Perk' to another treatment.
+                self.perk_offered = '' # Or None, depending on preference. Empty string is often safer for StringField.
             bonus_desc = f"Non-monetary perk: {self.perk_offered}"
         elif treatment == 'Choice':
             bonus_desc = f"You can choose either a cash bonus of €{Constants.CASH_BONUS} or a non-monetary perk (Gym Membership or Work Bike)."
