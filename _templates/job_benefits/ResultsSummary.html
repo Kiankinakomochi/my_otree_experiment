@@ -1,0 +1,35 @@
+{# ------------------------------------------------------------ #}
+{# myproject/_templates/job_benefits/ResultsSummary.html         #}
+{# ------------------------------------------------------------ #}
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block content %}
+    <h2>Summary of Your Choices</h2>
+
+    <h3>Job Offers Accepted:</h3>
+    <ul>
+    {% for item in accepted_treatments %}
+        <li>
+            {{ item.treatment }}:
+            {% if item.accepted %}
+                Accepted
+            {% else %}
+                Rejected
+            {% endif %}
+            {% if item.chosen_bonus %}
+                (Bonus chosen: {{ item.chosen_bonus }})
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+
+    {% if chosen_job %}
+        <h3>Your Final Preferred Job:</h3>
+        <p><strong>{{ chosen_job.title }}</strong></p>
+        <p>Wage: €{{ chosen_job.wage }}</p>
+        <p>Benefits: {{ chosen_job.benefits|join:", " }}</p>
+    {% else %}
+        <p>You did not select a preferred job.</p>
+    {% endif %}
+{% endblock %}

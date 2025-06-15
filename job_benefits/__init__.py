@@ -90,7 +90,7 @@ class JobOffer(Page):
             perk = random.choice(perks)
             self.perk_offered = perk  # Store the specific perk offered on the player object
             bonus_desc = f"Non-monetary perk: {perk}"
-        elif treatment == 'Choice':  # It's 'Choice', not 'choice' (case sensitive)
+        elif treatment == 'Choice':
             bonus_desc = f"You can choose either a cash bonus of €{cash} or a non-monetary perk (Gym Membership or Work Bike)."
         else: # Handle unexpected treatment values
             bonus_desc = "No specific bonus offered for this treatment type."
@@ -103,7 +103,8 @@ class JobOffer(Page):
 
     def before_next_page(self, timeout_happened): 
         if self.treatment == 'Choice' and self.accept_offer:
-            self._redirect_to_sibling_page('BonusChoice')
+            # Correct way to redirect within the same app
+            self._redirect_to_sibling_page('BonusChoice') 
 
 class BonusChoice(Page):
     form_model = 'player'
@@ -139,17 +140,24 @@ class ResultsSummary(Page):
 
     def vars_for_template(self):
         accepted_treatments = []
-        for r in range(1, Constants.num_rounds + 1): # Constants.num_rounds
-            player = self.in_round(r)
+        for p in self.in_all_rounds():
+            bonus_info = "N/A"
+            if p.treatment == 'Choice' and p.accept_offer:
+                bonus_info = p.choice_bonus
+            elif p.treatment == 'Non-Monetary Perk':
+                bonus_info = p.perk_offered
+
             accepted_treatments.append({
-                'treatment': player.treatment,
-                'accepted': player.accept_offer,
-                'chosen_bonus': player.choice_bonus if hasattr(player, 'choice_bonus') else None,
-                'perk_offered': player.perk_offered if hasattr(player, 'perk_offered') else None, # Include perk_offered
+                'round_number': p.round_number,
+                'treatment': p.treatment,
+                'accepted': "Yes" if p.accept_offer else "No",
+                'bonus_info': bonus_info,
             })
+        
         chosen_job = None
         if self.chosen_job_tile is not None:
             chosen_job = Constants.JOB_TILES[self.chosen_job_tile]
+            
         return dict(
             accepted_treatments=accepted_treatments,
             chosen_job=chosen_job,
