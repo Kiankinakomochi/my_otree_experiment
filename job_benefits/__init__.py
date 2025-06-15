@@ -69,6 +69,9 @@ class Introduction(Page):
         return dict(
             instructions="You will be presented with different job offers. For each, you will decide whether to accept or reject. At the end, you will choose your preferred job from a list."
         )
+    
+class ValuePerception(Page):
+    pass
 
 class JobOffer(Page):
     form_model = 'player'
