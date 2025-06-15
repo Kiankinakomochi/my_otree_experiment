@@ -1,4 +1,6 @@
+import logging
 from otree.api import *
+import random # Import random here as well if not already present
 
 # Define Constants, Subsession, Group, Player first
 class Constants(BaseConstants):
@@ -22,16 +24,19 @@ class Constants(BaseConstants):
 
 class Subsession(BaseSubsession):
     def creating_session(self):
+        # Initialize treatment order if not already done (for all players across all rounds)
         for p in self.get_players():
-            # Check if 'treatment_order' exists in participant.vars to avoid overwriting
-            # if session is reloaded or if the participant object persists across apps.
-            # This ensures the order is set only once per participant per session.
             if 'treatment_order' not in p.participant.vars:
-                import random
-                treatments = list(Constants.TREATMENTS) # Make a mutable copy
-                random.shuffle(treatments) # Shuffle treatments for random order
+                treatments = list(Constants.TREATMENTS)
+                random.shuffle(treatments)
                 p.participant.vars['treatment_order'] = treatments
-            p.treatment = p.participant.vars['treatment_order'][self.round_number - 1]
+
+
+        # Now we populate p.treatment from the treatment order immediately:
+        for p in self.get_players():
+            p.treatment = p.participant.vars['treatment_order'][p.round_number - 1]
+
+            
 
 
 class Group(BaseGroup):
@@ -55,6 +60,25 @@ class Player(BasePlayer):
     )
     treatment = models.StringField() # This must be defined here as it's used in Subsession.creating_session
 
+    # New fields for willingness to pay questionnaire
+    # Use Currency or FloatField for monetary values
+    # Make them optional by setting blank=True and null=True
+    # Add min and max values for data validation
+    # Use Currency field if you want oTree to handle currency formatting automatically
+    # Otherwise, FloatField is fine if you want to handle formatting yourself or
+    # if the input is not strictly monetary (e.g., could be 0 for not willing to pay)
+    willingness_to_pay_gym = models.CurrencyField(
+        label="What is the maximum amount you would be willing to pay per year for a premium gym membership (access to all facilities, classes, etc.)?",
+        blank=True,
+        min=0, # Participants should not be able to enter negative values
+        max=10000, # Set a reasonable maximum to prevent typos (adjust as needed)
+    )
+    willingness_to_pay_bike = models.CurrencyField(
+        label="What is the maximum amount you would be willing to pay per year for a work bicycle (including maintenance and insurance)?",
+        blank=True,
+        min=0, # Participants should not be able to enter negative values
+        max=10000, # Set a reasonable maximum to prevent typos (adjust as needed)
+    )
 
 doc = """
 Your app description
@@ -69,49 +93,63 @@ class Introduction(Page):
         return dict(
             instructions="You will be presented with different job offers. For each, you will decide whether to accept or reject. At the end, you will choose your preferred job from a list."
         )
+    
+class ValuePerception(Page):
+    form_model = 'player'
+    form_fields = ['willingness_to_pay_gym', 'willingness_to_pay_bike']
+
+    def is_displayed(self):
+        # This ensures the page is only shown in the first round.
+        return self.round_number == 1
+
+    # LOGGING POINT #1: Check data at the end of the previous page
+    # def before_next_page(self, timeout_happened):
+        # logging.info(f"--- before_next_page (from ValuePerception, R{self.round_number}): CHECKING Player {self.id_in_group}. Treatment is '{self.treatment}' ---")
+
 
 class JobOffer(Page):
     form_model = 'player'
     form_fields = ['accept_offer']
 
-    def vars_for_template(self):
-        self.treatment = ""
-        treatment = self.treatment
-        base = Constants.BASE_SALARY
-        cash = Constants.CASH_BONUS
-        perks = Constants.NON_MONETARY_PERKS
+    def vars_for_template(self): # <--- This line needs to be indented
+        # --- FIX: Ensure treatment_order exists before accessing it ---
+        if 'treatment_order' not in self.participant.vars:
+            treatments = list(Constants.TREATMENTS)
+            random.shuffle(treatments)
+            self.participant.vars['treatment_order'] = treatments
+        # STEP 1: Derive the treatment directly from the reliable source of truth.
+        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        self.treatment = treatment  # Store the treatment in the player instance for later usefi
 
-        bonus_desc = "" # Initialize bonus_desc
-
+        bonus_desc = ""
         if treatment == 'Cash Bonus':
-            bonus_desc = f"Cash bonus of €{cash}"
+            bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
         elif treatment == 'Non-Monetary Perk':
-            import random
-            perk = random.choice(perks)
-            self.perk_offered = perk  # Store the specific perk offered on the player object
-            bonus_desc = f"Non-monetary perk: {perk}"
+            # --- FIX: Set perk_offered here for Non-Monetary Perk treatment ---
+            if self.treatment == 'Non-Monetary Perk':
+                self.perk_offered = random.choice(Constants.NON_MONETARY_PERKS)
+            else:
+                # Ensure it's explicitly set to None or empty string if not a non-monetary perk
+                # This prevents it from holding a value from a previous round if a player
+                # switches from 'Non-Monetary Perk' to another treatment.
+                self.perk_offered = '' # Or None, depending on preference. Empty string is often safer for StringField.
+            bonus_desc = f"Non-monetary perk: {self.perk_offered}"
         elif treatment == 'Choice':
-            bonus_desc = f"You can choose either a cash bonus of €{cash} or a non-monetary perk (Gym Membership or Work Bike)."
-        else: # Handle unexpected treatment values
-            bonus_desc = "No specific bonus offered for this treatment type."
+            bonus_desc = f"You can choose either a cash bonus of €{Constants.CASH_BONUS} or a non-monetary perk (Gym Membership or Work Bike)."
 
         return dict(
-            base_salary=base,
+            base_salary=Constants.BASE_SALARY,
             treatment=treatment,
             bonus_desc=bonus_desc,
         )
-
-    def before_next_page(self, timeout_happened): 
-        if self.treatment == 'Choice' and self.accept_offer:
-            # Correct way to redirect within the same app
-            self._redirect_to_sibling_page('BonusChoice') 
-
 class BonusChoice(Page):
     form_model = 'player'
     form_fields = ['choice_bonus']
 
     def is_displayed(self):
-        return self.treatment == 'Choice' and self.accept_offer
+        # This page's display logic must also use the reliable source of truth.
+        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        return treatment == 'Choice' and self.field_maybe_none('accept_offer') is True
 
 
 class JobTiles(Page):
@@ -157,10 +195,17 @@ class ResultsSummary(Page):
         chosen_job = None
         if self.chosen_job_tile is not None:
             chosen_job = Constants.JOB_TILES[self.chosen_job_tile]
+
+        # Get the player object from Round 1 to access WTP values
+        # self.player.in_round(1) retrieves the player object for the current participant in round 1.
+        player_round_1 = self.in_round(1) 
             
         return dict(
             accepted_treatments=accepted_treatments,
             chosen_job=chosen_job,
+            # Pass the willingness to pay values from the player object of Round 1
+            willingness_to_pay_gym=player_round_1.willingness_to_pay_gym,
+            willingness_to_pay_bike=player_round_1.willingness_to_pay_bike,
         )
 
-page_sequence = [Introduction, JobOffer, BonusChoice, JobTiles, ResultsSummary]
+page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles, ResultsSummary]

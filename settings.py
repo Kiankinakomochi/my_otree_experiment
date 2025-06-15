@@ -53,6 +53,8 @@ DATABASES = {
 
 # Internationalization settings
 LANGUAGE_CODE = 'en-us'
+REAL_WORLD_CURRENCY_CODE = 'EUR'
+USE_POINTS = False
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
