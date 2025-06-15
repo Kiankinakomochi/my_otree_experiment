@@ -1,0 +1,23 @@
+{# ------------------------------------------------------------ #}
+{# my_otree_experiment/_templates/job_benefits/JobTiles.html               #}
+{# ------------------------------------------------------------ #}
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block content %}
+    <h2>Select Your Preferred Job</h2>
+    <form method="post">
+        {% for item in jobs_with_indices %} {# Iterate over the prepared list #}
+            <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px;">
+                <label>
+                    <input type="radio" name="chosen_job_tile" value="{{ item.index }}" required> {# Use item.index #}
+                    <strong>{{ item.data.title }}</strong><br> {# Access job data via item.data #}
+                    Wage: €{{ item.data.wage }}<br>
+                    Benefits: {{ item.data.benefits }}
+
+                </label>
+            </div>
+        {% endfor %}
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}

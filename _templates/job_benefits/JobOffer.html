@@ -1,0 +1,19 @@
+{# ------------------------------------------------------------ #}
+{# my_otree_experiment/_templates/job_benefits/JobOffer.html               #}
+{# ------------------------------------------------------------ #}
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block content %}
+    <h2>Job Offer € Round {{ player.round_number }}</h2>
+
+    <p>Base Salary: €{{ base_salary }}</p>
+    <p><strong>Bonus Offer:</strong> {{ bonus_desc }}</p>
+
+    <form method="post">
+        {{ form.accept_offer }}
+        <label for="id_accept_offer">Do you accept this job offer?</label><br><br>
+
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}

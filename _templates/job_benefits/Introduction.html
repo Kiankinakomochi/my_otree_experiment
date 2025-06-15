@@ -1,0 +1,14 @@
+{# ------------------------------------------------------------ #}
+{# my_otree_experiment/_templates/job_benefits/Introduction.html           #}
+{# ------------------------------------------------------------ #}
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block content %}
+    <h2>Welcome to the Job Benefits Experiment</h2>
+    <p>{{ instructions }}</p>
+
+    <form method="post">
+        <button type="submit">Start</button>
+    </form>
+{% endblock %}

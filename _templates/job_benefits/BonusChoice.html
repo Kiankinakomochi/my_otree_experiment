@@ -1,0 +1,16 @@
+{# ------------------------------------------------------------ #}
+{# my_otree_experiment/_templates/job_benefits/BonusChoice.html             #}
+{# ------------------------------------------------------------ #}
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block content %}
+    <h2>Choose Your Bonus</h2>
+    <p>You accepted the job offer with a choice of bonuses. Please select your preferred bonus:</p>
+
+    <form method="post">
+        {{ form.choice_bonus }}
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}
