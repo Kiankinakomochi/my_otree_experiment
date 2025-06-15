@@ -1,5 +1,5 @@
 {# ------------------------------------------------------------ #}
-{# myproject/_templates/job_benefits/ResultsSummary.html         #}
+{# my_otree_experiment/_templates/job_benefits/ResultsSummary.html         #}
 {# ------------------------------------------------------------ #}
 {% extends "global/Page.html" %}
 {% load otree %}
@@ -17,8 +17,8 @@
             {% else %}
                 Rejected
             {% endif %}
-            {% if item.chosen_bonus %}
-                (Bonus chosen: {{ item.chosen_bonus }})
+            {% if item.bonus_info %}
+                (Bonus chosen: {{ item.bonus_info }})
             {% endif %}
         </li>
     {% endfor %}
@@ -28,7 +28,7 @@
         <h3>Your Final Preferred Job:</h3>
         <p><strong>{{ chosen_job.title }}</strong></p>
         <p>Wage: €{{ chosen_job.wage }}</p>
-        <p>Benefits: {{ chosen_job.benefits|join:", " }}</p>
+        <p>Benefits: {{ chosen_job.benefits }}</p>
     {% else %}
         <p>You did not select a preferred job.</p>
     {% endif %}
