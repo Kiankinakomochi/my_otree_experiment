@@ -1,5 +1,5 @@
 {# ------------------------------------------------------------ #}
-{# my_otree_experiment/_templates/job_benefits/JobOffer.html               #}
+{# my_otree_experiment/_templates/job_benefits/JobOffer.html #}
 {# ------------------------------------------------------------ #}
 {% extends "global/Page.html" %}
 {% load otree %}
@@ -75,7 +75,23 @@
         button[type="submit"]:hover {
             background-color: #0056b3;
         }
+
+        /* Instruction specific styling */
+        .instruction {
+            background-color: #e7f3ff; /* Light blue background */
+            border-left: 5px solid #007bff; /* Blue left border */
+            padding: 15px 20px;
+            margin-bottom: 20px; /* Space below the instruction block */
+            border-radius: 5px;
+            font-size: 1.1em;
+            color: #333;
+            text-align: left; /* Ensure text aligns left within the instruction box */
+        }
     </style>
+
+    <div class="instruction">
+        You will be presented with a job offer that includes a form of benefit. Please decide whether to accept or reject this offer.
+    </div>
 
     <div class="otree-content">
         <h2>Job Offer € Round {{ player.round_number }}</h2>
