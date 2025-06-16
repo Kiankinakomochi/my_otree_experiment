@@ -42,22 +42,51 @@
             color: #0056b3; /* Highlight strong text */
         }
 
-        /* Form and Checkbox Styling */
+        /* Form and Radio Button Styling */
         form {
             margin-top: 30px;
         }
 
-        label {
-            font-size: 1.1em;
-            margin-left: 10px; /* Space between checkbox and label */
-            display: inline-block; /* Keep label next to checkbox */
+        /* --- NEW/MODIFIED CSS for Horizontal Radio Buttons --- */
+        .form-group { /* OTree's default wrapper for form fields, where radio buttons typically reside */
+            display: flex; /* Use flexbox for horizontal alignment */
+            flex-direction: column; /* Stack the label and then the choices */
+            align-items: center; /* Center the group horizontally */
+            margin-bottom: 25px; /* Spacing below the radio button group */
+            margin-top: 15px; /* Spacing above the radio button group */
         }
 
-        input[type="checkbox"] {
-            transform: scale(1.5); /* Make checkbox larger */
-            margin-right: 5px;
-            vertical-align: middle; /* Align checkbox vertically with text */
+        .form-group label { /* The main question label for the radio buttons */
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px; /* Space below the question */
+            display: block; /* Ensure it's on its own line */
+            color: #333;
         }
+
+        .choices-horizontal {
+            display: flex; /* Flexbox for horizontal radio buttons */
+            gap: 25px; /* Space between "Yes" and "No" options */
+            justify-content: center; /* Center the "Yes" and "No" options */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens if necessary */
+        }
+
+        .choices-horizontal input[type="radio"] {
+            transform: scale(1.5); /* Make radio button larger */
+            margin-right: 8px; /* Space between radio button and its label */
+            vertical-align: middle; /* Align radio button vertically with text */
+        }
+
+        .choices-horizontal label { /* Labels for "Yes" and "No" */
+            font-weight: normal; /* Make choice labels not bold */
+            font-size: 1.1em;
+            margin-left: 0; /* Reset margin from previous label styles */
+            display: inline-flex; /* Use inline-flex to align input and label */
+            align-items: center; /* Vertically center checkbox and its label */
+            cursor: pointer;
+        }
+        /* --- END NEW/MODIFIED CSS --- */
+
 
         /* Button Styling */
         button[type="submit"] {
@@ -100,9 +129,13 @@
         <p><strong>Bonus Offer:</strong> {{ bonus_desc }}</p>
 
         <form method="post">
-            <div style="margin-bottom: 15px;"> {# Added a div for spacing #}
-                {{ form.accept_offer }}
-                <label for="id_accept_offer">Do you accept this job offer?</label>
+            {# --- Modified HTML structure for horizontal radio buttons --- #}
+            <div class="form-group">
+                <label>Do you accept this job offer?</label> {# The main question #}
+                <div class="choices-horizontal">
+                    {# OTree's formfield will render the radio buttons and their individual labels #}
+                    {{ form.accept_offer }}
+                </div>
             </div>
             
             <button type="submit">Submit</button>
