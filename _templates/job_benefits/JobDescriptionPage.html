@@ -1,5 +1,5 @@
 {# ------------------------------------------------------------ #}
-{# myproject/_templates/job_benefits/JobDescription.html              #}
+{# myproject/_templates/job_benefits/JobDescriptionPage.html              #}
 {# ------------------------------------------------------------ #}
 {% extends "global/Page.html" %}
 {% load otree %}
@@ -130,82 +130,75 @@
     </style>
 
     <div class="otree-content">
-        <h2>Job Opportunities</h2>
+        <h2>Job Details: {{ job.title }}</h2>
         <p>
-            Review the available job positions below, including a brief explanation, salary, and benefits for each.
-            Please choose your preferred job from the list to proceed.
+            Please review the detailed description for the **{{ job.title }}** position below.
+            Click "Confirm Choice" to proceed.
         </p>
 
         <form method="post">
-            <div class="job-tiles-container"> {# Container for grid layout if needed #}
-                {% for job in job_tiles %}
-                    <label class="job-tile" for="id_chosen_job_tile_{{ forloop.counter0 }}">
-                        <input type="radio" name="chosen_job_tile" value="{{ forloop.counter0 }}" id="id_chosen_job_tile_{{ forloop.counter0 }}">
-                        <div class="job-tile-content">
-                            <h3>{{ job.title }}</h3>
-                            <p>
-                                {% if job.title == 'Analyst' %}
-                                    As an Analyst, you will be responsible for collecting, interpreting, and presenting data to help
-                                    the organization make informed decisions. This role requires strong analytical skills and attention to detail.
-                                {% elif job.title == 'Developer' %}
-                                    As a Developer, you will design, build, and maintain software applications and systems. You will work on
-                                    coding, testing, and debugging to create efficient and scalable solutions.
-                                {% elif job.title == 'Consultant' %}
-                                    As a Consultant, you will provide expert advice and strategic solutions to clients across various industries.
-                                    This involves identifying problems, developing recommendations, and assisting with implementation.
-                                {% elif job.title == 'Manager' %}
-                                    As a Manager, you will lead a team, oversee projects, and make key strategic decisions to achieve organizational goals.
-                                    This role demands strong leadership, communication, and organizational skills.
-                                {% else %}
-                                    A dynamic role involving diverse responsibilities and challenges in a collaborative environment.
-                                {% endif %}
-                            </p>
-                            <div class="mb-4">
-                                <p>Salary: <span class="salary-text">€{{ job.wage }} / month</span></p>
-                            </div>
-                            <div>
-                                <p>Benefits:</p>
-                                <ul class="list-disc list-inside">
-                                    {% for benefit in job.benefits %}
-                                        <li>
-                                            <strong>{{ benefit }}</strong>:
-                                            {% if benefit == 'Gym Membership' %}
-                                                Access to a premium gym facility with classes and personal training options.
-                                            {% elif benefit == 'Flexible hours' %}
-                                                The ability to adjust your work schedule to better fit your personal needs and commitments.
-                                            {% elif benefit == 'Work Bike' %}
-                                                A company-provided bicycle for commuting and personal use, including maintenance and insurance.
-                                            {% elif benefit == 'Extra vacation days' %}
-                                                Additional paid leave beyond the standard allowance to enjoy more personal time.
-                                            {% elif benefit == 'Public transport ticket' %}
-                                                A subsidized or fully covered monthly pass for public transportation.
-                                            {% elif benefit == 'Training courses' %}
-                                                Opportunities to attend professional development courses and workshops to enhance your skills.
-                                            {% elif benefit == 'Childcare support' %}
-                                                Financial assistance or access to childcare facilities to support working parents.
-                                            {% elif benefit == 'Health program' %}
-                                                Comprehensive wellness programs, including health screenings, fitness challenges, and mental health resources.
-                                            {% else %}
-                                                Further details will be provided upon offer acceptance.
-                                            {% endif %}
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
+            {# The job information is now displayed directly, not in a loop. #}
+            <div class="job-tile" style="cursor: default;"> {# A single, non-interactive tile #}
+                <div class="job-tile-content">
+                    <h3>{{ job.title }}</h3>
+                    <p>
+                        {% if job.title == 'Analyst' %}
+                            As an Analyst, you will be responsible for collecting, interpreting, and presenting data to help
+                            the organization make informed decisions. This role requires strong analytical skills and attention to detail.
+                        {% elif job.title == 'Developer' %}
+                            As a Developer, you will design, build, and maintain software applications and systems. You will work on
+                            coding, testing, and debugging to create efficient and scalable solutions.
+                        {% elif job.title == 'Consultant' %}
+                            As a Consultant, you will provide expert advice and strategic solutions to clients across various industries.
+                            This involves identifying problems, developing recommendations, and assisting with implementation.
+                        {% elif job.title == 'Manager' %}
+                            As a Manager, you will lead a team, oversee projects, and make key strategic decisions to achieve organizational goals.
+                            This role demands strong leadership, communication, and organizational skills.
+                        {% else %}
+                            A dynamic role involving diverse responsibilities and challenges in a collaborative environment.
+                        {% endif %}
+                    </p>
+                    <div class="mb-4">
+                        <p>Salary: <span class="salary-text">€{{ job.wage }} / month</span></p>
+                    </div>
+                    <div>
+                        <p>Benefits:</p>
+                        <ul class="list-disc list-inside">
+                            {% for benefit in job.benefits %}
+                                <li>
+                                    <strong>{{ benefit }}</strong>:
+                                    {% if benefit == 'Gym Membership' %}
+                                        Access to a premium gym facility with classes and personal training options.
+                                    {% elif benefit == 'Flexible hours' %}
+                                        The ability to adjust your work schedule to better fit your personal needs and commitments.
+                                    {% elif benefit == 'Work Bike' %}
+                                        A company-provided bicycle for commuting and personal use, including maintenance and insurance.
+                                    {% elif benefit == 'Extra vacation days' %}
+                                        Additional paid leave beyond the standard allowance to enjoy more personal time.
+                                    {% elif benefit == 'Public transport ticket' %}
+                                        A subsidized or fully covered monthly pass for public transportation.
+                                    {% elif benefit == 'Training courses' %}
+                                        Opportunities to attend professional development courses and workshops to enhance your skills.
+                                    {% elif benefit == 'Childcare support' %}
+                                        Financial assistance or access to childcare facilities to support working parents.
+                                    {% elif benefit == 'Health program' %}
+                                        Comprehensive wellness programs, including health screenings, fitness challenges, and mental health resources.
+                                    {% else %}
+                                        Further details will be provided upon offer acceptance.
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                         </div>
                     </label>
-                {% endfor %}
-            </div>
-
+                </div>
             <div class="button-group">
-                <button type="button" onclick="window.history.back()" class="back-button">
-                    Back
-                </button>
-                <button type="submit">
-                    Submit Your Choice
-                </button>
+                {# See section 2 below for the safe back button implementation. #}
+                <button type="submit" name="confirm_or_go_back" value="back" class="back-button" formnovalidate>Back to Selection</button>
+                <button type="submit" name="confirm_or_go_back" value="confirm">Confirm Choice</button>
+
             </div>
         </form>
     </div>
-
 {% endblock %}

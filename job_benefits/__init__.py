@@ -59,7 +59,9 @@ class Player(BasePlayer):
         blank=True,
     )
     treatment = models.StringField() # This must be defined here as it's used in Subsession.creating_session
+    confirm_or_go_back = models.StringField()
 
+   
     # New fields for willingness to pay questionnaire
     # Use Currency or FloatField for monetary values
     # Make them optional by setting blank=True and null=True
@@ -151,13 +153,17 @@ class BonusChoice(Page):
         treatment = self.participant.vars['treatment_order'][self.round_number - 1]
         return treatment == 'Choice' and self.field_maybe_none('accept_offer') is True
 
-
+# where the job selection happens
 class JobTiles(Page):
     form_model = 'player'
     form_fields = ['chosen_job_tile']
 
     def is_displayed(self):
-        return self.round_number == Constants.num_rounds
+        return (
+            self.round_number == Constants.num_rounds
+            and (self.field_maybe_none('chosen_job_tile') is None)
+        )
+
 
     def vars_for_template(self):
         # Prepare the list with indices directly in Python
@@ -172,20 +178,21 @@ class JobTiles(Page):
     
 class JobDescriptionPage(Page):
     form_model = 'player'
-    form_fields = ['chosen_job_tile'] # Assuming you'll select the job here
+    # This MUST match the field you use for the confirmation logic.
+    form_fields = ['confirm_or_go_back']
 
     def is_displayed(self):
-        # You'll need to define when this page should be displayed.
-        # For example, if it replaces JobTiles:
-        return self.round_number == Constants.num_rounds
-        # Or if it's a new page before JobTiles:
-        # return True # Or some other condition
-
-    def vars_for_template(self):
-        # This is crucial to pass your job data to the HTML template
-        return dict(
-            job_tiles=Constants.JOB_TILES,
+        return (
+            self.round_number == Constants.num_rounds
+            and self.field_maybe_none('chosen_job_tile')is not None
         )
+
+    def before_next_page(self):
+        if self.field_maybe_none('confirm_or_go_back') == 'back':
+            # Set a flag or reset choice to allow return to JobTiles
+            self.chosen_job_tile = None
+
+
 
 
 
@@ -211,11 +218,11 @@ class ResultsSummary(Page):
             })
         
         chosen_job = None
-        if self.chosen_job_tile is not None:
+        if self.field_maybe_none('chosen_job_tile') is not None:
             chosen_job = Constants.JOB_TILES[self.chosen_job_tile]
 
         # Get the player object from Round 1 to access WTP values
-        # self.player.in_round(1) retrieves the player object for the current participant in round 1.
+        # self.in_round(1) retrieves the player object for the current participant in round 1.
         player_round_1 = self.in_round(1) 
             
         return dict(
