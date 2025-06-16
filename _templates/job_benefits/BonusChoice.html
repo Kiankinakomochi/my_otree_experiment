@@ -1,5 +1,5 @@
 {# ------------------------------------------------------------ #}
-{# my_otree_experiment/_templates/job_benefits/BonusChoice.html             #}
+{# my_otree_experiment/_templates/job_benefits/BonusChoice.html #}
 {# ------------------------------------------------------------ #}
 {% extends "global/Page.html" %}
 {% load otree %}
@@ -45,26 +45,48 @@
         /* Form and Radio Button Styling */
         form {
             margin-top: 30px;
-            text-align: left; /* Align radio buttons to the left within the form */
-            display: inline-block; /* Helps center the block of choices */
+            /* Keep text-align: left; and display: inline-block; if you want the form itself to be centered
+               and its contents left-aligned. For centered radio choices, we'll use flexbox inside. */
+            text-align: left;
+            display: inline-block;
         }
 
-        .form-group { /* OTree's default wrapper for form fields */
-            margin-bottom: 15px;
+        /* --- NEW/MODIFIED CSS for Horizontal Radio Buttons --- */
+        /* This targets the ul that oTree wraps radio choices in */
+        .otree-content ul.form-fields {
+            list-style: none; /* Remove bullet points from the list */
+            padding: 0; /* Remove default padding */
+            margin: 0; /* Remove default margin */
+            display: flex; /* Use flexbox for horizontal arrangement */
+            flex-direction: row; /* Ensure items are in a row */
+            justify-content: center; /* Center the choices horizontally */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 40px; /* Space between each radio button option (e.g., Cash Bonus, Gym Membership) */
+            margin-bottom: 20px; /* Space below the choices */
+        }
+
+        /* Each li within the ul is an individual choice item */
+        .otree-content ul.form-fields li {
+            margin: 0; /* Remove default list item margin */
+            display: flex; /* Use flexbox for input and its label within each li */
+            align-items: center; /* Vertically align the radio button and label */
         }
 
         .form-check-input { /* Default class for radio buttons/checkboxes in OTree forms */
             transform: scale(1.4); /* Make radio buttons larger */
-            margin-right: 10px;
-            vertical-align: middle; /* Align radio button vertically with text */
+            margin-right: 10px; /* Space between radio button and its label */
+            /* vertical-align is less critical with flexbox, but harmless */
+            vertical-align: middle;
         }
 
         .form-check-label { /* Default class for labels associated with form inputs */
             font-size: 1.1em;
-            vertical-align: middle; /* Align label vertically with radio button */
+            /* vertical-align is less critical with flexbox, but harmless */
+            vertical-align: middle;
             cursor: pointer; /* Indicate it's clickable */
-            display: inline-block; /* Ensure it stays next to the radio button */
+            /* display: inline-block is handled by flex on the parent li */
         }
+        /* --- END NEW/MODIFIED CSS --- */
 
         /* Button Styling */
         button[type="submit"] {
@@ -89,9 +111,9 @@
         <p>You accepted the job offer with a choice of bonuses. Please select your preferred bonus:</p>
 
         <form method="post">
-            {# OTree renders radio buttons with specific classes, let's target them #}
+            {# OTree renders radio buttons within a <ul> with class "form-fields" by default #}
             {{ form.choice_bonus }}
-            <br>
+            {# No need for <br> here, as flexbox will handle spacing #}
             <button type="submit">Submit</button>
         </form>
     </div>
