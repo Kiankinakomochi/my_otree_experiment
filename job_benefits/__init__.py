@@ -169,6 +169,24 @@ class JobTiles(Page):
             job_tiles=Constants.JOB_TILES, # You can keep this if needed elsewhere
             jobs_with_indices=jobs_with_indices # Pass the enumerated list
         )
+    
+class JobDescriptionPage(Page):
+    form_model = 'player'
+    form_fields = ['chosen_job_tile'] # Assuming you'll select the job here
+
+    def is_displayed(self):
+        # You'll need to define when this page should be displayed.
+        # For example, if it replaces JobTiles:
+        return self.round_number == Constants.num_rounds
+        # Or if it's a new page before JobTiles:
+        # return True # Or some other condition
+
+    def vars_for_template(self):
+        # This is crucial to pass your job data to the HTML template
+        return dict(
+            job_tiles=Constants.JOB_TILES,
+        )
+
 
 
 class ResultsSummary(Page):
@@ -208,4 +226,4 @@ class ResultsSummary(Page):
             willingness_to_pay_bike=player_round_1.willingness_to_pay_bike,
         )
 
-page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles, ResultsSummary]
+page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles,JobDescriptionPage, ResultsSummary]

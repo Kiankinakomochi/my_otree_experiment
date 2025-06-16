@@ -137,7 +137,6 @@
         </p>
 
         <form method="post">
-            {% csrf_token %}
             <div class="job-tiles-container"> {# Container for grid layout if needed #}
                 {% for job in job_tiles %}
                     <label class="job-tile" for="id_chosen_job_tile_{{ forloop.counter0 }}">
