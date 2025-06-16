@@ -87,6 +87,16 @@
         button[type="submit"]:hover {
             background-color: #0056b3;
         }
+
+        /* Image specific styling */
+        .benefit-image {
+            max-width: 100%; /* Ensure image is responsive */
+            height: auto; /* Maintain aspect ratio */
+            margin-top: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px; /* Slightly rounded corners for images */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); /* subtle shadow for images */
+        }
     </style>
 
     <div class="otree-content">
@@ -100,6 +110,8 @@
                 <p>
                     <strong>Gym Membership:</strong> What is the maximum amount you would be willing to pay <b>per year</b> for a premium gym membership (access to all facilities, classes, etc.)?
                 </p>
+                {# Add gym image here #}
+                <img src="{% static 'global/gym.jpg' %}" alt="Gym facilities" class="benefit-image">
                 {# Remove the manual label and rely on formfield to render both label and input #}
                 {{ formfield player.willingness_to_pay_gym }}
             </div>
@@ -108,6 +120,8 @@
                 <p>
                     <strong>Work Bicycle:</strong> What is the maximum amount you would be willing to pay <b>per year</b> for a work bicycle (including maintenance and insurance)?
                 </p>
+                {# Add work bike image here #}
+                <img src="{% static 'global/work_bike.jpg' %}" alt="Work bicycle" class="benefit-image">
                 {# Remove the manual label and rely on formfield to render both label and input #}
                 {{ formfield player.willingness_to_pay_bike }}
             </div>
