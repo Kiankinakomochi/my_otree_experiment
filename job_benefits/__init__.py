@@ -134,7 +134,7 @@ class JobOffer(Page):
             random.shuffle(treatments)
             self.participant.vars['treatment_order'] = treatments
         # STEP 1: Derive the treatment directly from the reliable source of truth.
-        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        treatment = self.participant.vars['treatment_order'][self.round_number]
         self.treatment = treatment  # Store the treatment in the player instance for later usefi
 
         bonus_desc = ""
