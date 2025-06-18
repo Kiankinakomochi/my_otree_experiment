@@ -69,10 +69,11 @@
 
     <form method="post" id="job-selection-form">
         <input type="hidden" name="chosen_job_tile" id="chosen_job_tile_input">
+        <input type="hidden" name="modal_time_log" id="modal_time_log_input">
 
         <div class="job-tiles-container">
             {% for job in job_tiles %}
-            <div class="job-tile" data-index="{{ forloop.counter0 }}">
+            <div class="job-tile" data-index="{{ forloop.counter0 }}" data-title="{{ job.title }}">
                 <strong>{{ job.title }}</strong>
                 <div class="wage">Wage: €{{ job.wage }}</div>
                 <div class="benefits">Benefits: {{ job.benefits }}</div>
@@ -104,62 +105,96 @@
 document.addEventListener('DOMContentLoaded', function() {
     const jobTilesData = {{ job_tiles|json }};
     const modal = document.getElementById('job-modal');
-    const chosenJobInput = document.getElementById('chosen_job_tile_input');
     const form = document.getElementById('job-selection-form');
-
-    const modalTitle = document.getElementById('modal-title');
-    const modalDesc = document.getElementById('modal-description');
-    const modalWage = document.getElementById('modal-wage');
-    const modalBenefitsList = document.getElementById('modal-benefits');
+    const chosenJobInput = document.getElementById('chosen_job_tile_input');
+    const timeLogInput = document.getElementById('modal_time_log_input');
     const backBtn = document.getElementById('modal-back-btn');
     const confirmBtn = document.getElementById('modal-confirm-btn');
 
+    // --- Time Tracking Variables ---
+    let timeLog = {};
+    let modalOpenTime;
+    let currentlyOpenJobTitle;
+
+    // --- Function to OPEN the modal ---
+    function openModal(jobIndex) {
+        const jobData = jobTilesData[jobIndex];
+        currentlyOpenJobTitle = jobData.title;
+
+        // Set the hidden input for the job choice
+        chosenJobInput.value = jobIndex;
+
+        // Populate modal content
+        document.getElementById('modal-title').textContent = jobData.title;
+        document.getElementById('modal-description').textContent = jobData.description;
+        document.getElementById('modal-wage').textContent = `€${jobData.wage}`;
+        const benefitsList = document.getElementById('modal-benefits');
+        benefitsList.innerHTML = '';
+        jobData.benefits.forEach(benefitName => {
+            const li = document.createElement('li');
+            const benefitDescription = jobData.benefit_details[benefitName] || 'Details not available.';
+            li.innerHTML = `<strong>${benefitName}:</strong> ${benefitDescription}`;
+            benefitsList.appendChild(li);
+        });
+        
+        // Start the timer and show the modal
+        modalOpenTime = new Date().getTime();
+        modal.style.display = 'block';
+    }
+
+    // --- Function to CLOSE the modal and LOG the time ---
+    function closeModalAndLogTime() {
+        if (!modalOpenTime) return;
+
+        const timeElapsed = new Date().getTime() - modalOpenTime;
+        
+        if (timeLog[currentlyOpenJobTitle]) {
+            timeLog[currentlyOpenJobTitle] += timeElapsed;
+        } else {
+            timeLog[currentlyOpenJobTitle] = timeElapsed;
+        }
+
+        modal.style.display = 'none';
+        modalOpenTime = null;
+        currentlyOpenJobTitle = null;
+    }
+
+    // --- Event Listeners ---
+
+    // 1. Listen for clicks on the job tiles to open the modal
     document.querySelectorAll('.job-tile').forEach(tile => {
         tile.addEventListener('click', function() {
-            const selectedJobIndex = this.dataset.index;
-            const jobData = jobTilesData[selectedJobIndex];
-
-            // FIX #2: Set the hidden input value as soon as a tile is clicked.
-            // This makes the form ready to be submitted at any time.
-            chosenJobInput.value = selectedJobIndex;
-
-            modalTitle.textContent = jobData.title;
-            modalDesc.textContent = jobData.description;
-            modalWage.textContent = `€${jobData.wage}`;
-            modalBenefitsList.innerHTML = '';
-
-            jobData.benefits.forEach(benefitName => {
-                const li = document.createElement('li');
-                const benefitDescription = jobData.benefit_details[benefitName] || 'Details not available.';
-                li.innerHTML = `<strong>${benefitName}:</strong> ${benefitDescription}`;
-                modalBenefitsList.appendChild(li);
-            });
-
-            modal.style.display = 'block';
+            openModal(this.dataset.index);
         });
     });
 
-    // The "Back" button simply closes the modal. It's a type="button" so it won't submit the form.
+    // 2. Listen for clicks on the "Back" button to close the modal
     backBtn.addEventListener('click', function() {
-        modal.style.display = 'none';
-        chosenJobInput.value = ''; // Clear the choice
+        closeModalAndLogTime();
+        chosenJobInput.value = ''; // Clear selection when going back
     });
 
-    // Optional: Prevent form submission if nothing is chosen
-    // (though the modal flow makes this unlikely to happen)
-    form.addEventListener('submit', function(event) {
-        if (chosenJobInput.value === '') {
-            alert('Please select a job before confirming.');
-            event.preventDefault(); // Stop the form from submitting
-        }
-    });
-
-    // Close modal if user clicks outside of the content area
+    // 3. Listen for clicks on the background to close the modal
     window.addEventListener('click', function(event) {
         if (event.target == modal) {
-            modal.style.display = 'none';
-            chosenJobInput.value = ''; // Clear the choice
+            closeModalAndLogTime();
+            chosenJobInput.value = ''; // Clear selection when going back
         }
+    });
+
+    // 4. Listen for clicks on the final "Confirm" button
+    confirmBtn.addEventListener('click', function() {
+        if (chosenJobInput.value === '') {
+            alert('Please make a selection first.');
+            return;
+        }
+        
+        // Log the final viewing time
+        closeModalAndLogTime();
+        
+        // Finalize data and submit the form
+        timeLogInput.value = JSON.stringify(timeLog);
+        form.submit();
     });
 });
 </script>

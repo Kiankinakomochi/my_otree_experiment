@@ -101,16 +101,16 @@ class Player(BasePlayer):
     )
     willingness_to_pay_bike = models.CurrencyField(
         label="What is the maximum amount you would be willing to pay per year for a work bicycle (including maintenance and insurance)?",
-        blank=True,
-        min=0, # Participants should not be able to enter negative values
-        max=10000, # Set a reasonable maximum to prevent typos (adjust as needed)
+        blank=True, min=0, max=10000
     )
 
-doc = """
-Your app description
-"""
+    # --- NEW FIELD ---
+    # This field will store a JSON string of the time spent on each modal.
+    # e.g., '{"Analyst": 5500, "Developer": 12345}'
+    modal_time_log = models.StringField(blank=True)
 
-# PAGES
+
+# ... (Introduction, ValuePerception, JobOffer, BonusChoice Pages remain the same) ...
 class Introduction(Page):
     def is_displayed(self):
         return self.round_number == 1
@@ -170,7 +170,8 @@ class BonusChoice(Page):
 # --- REFACTORED: Merged JobTiles and JobDescriptionPage into JobSelection ---
 class JobSelection(Page):
     form_model = 'player'
-    form_fields = ['chosen_job_tile']
+    # --- ADDED `modal_time_log` TO THE FORM FIELDS ---
+    form_fields = ['chosen_job_tile', 'modal_time_log']
 
     def is_displayed(self):
         # Only display this page in the final round
