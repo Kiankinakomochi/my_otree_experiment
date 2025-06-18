@@ -15,10 +15,46 @@ class Constants(BaseConstants):
     NON_MONETARY_PERKS = ['Gym Membership', 'Work Bike']
 
     JOB_TILES = [
-        dict(title='Analyst', wage=3200, benefits=['Gym Membership', 'Flexible hours']),
-        dict(title='Developer', wage=3300, benefits=['Work Bike', 'Extra vacation days']),
-        dict(title='Consultant', wage=3100, benefits=['Public transport ticket', 'Training courses']),
-        dict(title='Manager', wage=3500, benefits=['Childcare support', 'Health program']),
+        dict(
+            title='Analyst',
+            wage=3200,
+            benefits=['Gym Membership', 'Flexible hours'],
+            description='As an Analyst, you will be responsible for collecting, interpreting, and presenting data to help the organization make informed decisions. This role requires strong analytical skills and attention to detail.',
+            benefit_details={
+                'Gym Membership': 'Access to a premium gym facility with classes and personal training options.',
+                'Flexible hours': 'The ability to adjust your work schedule to better fit your personal needs and commitments.'
+            }
+        ),
+        dict(
+            title='Developer',
+            wage=3300,
+            benefits=['Work Bike', 'Extra vacation days'],
+            description='As a Developer, you will design, build, and maintain software applications and systems. You will work on coding, testing, and debugging to create efficient and scalable solutions.',
+            benefit_details={
+                'Work Bike': 'A company-provided bicycle for commuting and personal use, including maintenance and insurance.',
+                'Extra vacation days': 'Additional paid leave beyond the standard allowance to enjoy more personal time.'
+            }
+        ),
+        dict(
+            title='Consultant',
+            wage=3100,
+            benefits=['Public transport ticket', 'Training courses'],
+            description='As a Consultant, you will provide expert advice and strategic solutions to clients across various industries. This involves identifying problems, developing recommendations, and assisting with implementation.',
+            benefit_details={
+                'Public transport ticket': 'A subsidized or fully covered monthly pass for public transportation.',
+                'Training courses': 'Opportunities to attend professional development courses and workshops to enhance your skills.'
+            }
+        ),
+        dict(
+            title='Manager',
+            wage=3500,
+            benefits=['Childcare support', 'Health program'],
+            description='As a Manager, you will lead a team, oversee projects, and make key strategic decisions to achieve organizational goals. This role demands strong leadership, communication, and organizational skills.',
+            benefit_details={
+                'Childcare support': 'Financial assistance or access to childcare facilities to support working parents.',
+                'Health program': 'Comprehensive wellness programs, including health screenings, fitness challenges, and mental health resources.'
+            }
+        ),
     ]
 
 
@@ -52,21 +88,11 @@ class Player(BasePlayer):
         blank=True,
         label="If you chose the Choice treatment, select your preferred bonus"
     )
-    chosen_job_tile = models.IntegerField(
-        choices=[(i, f"{job['title']} - €{job['wage']} + {', '.join(job['benefits'])}") for i, job in enumerate(Constants.JOB_TILES)],
-        widget=widgets.RadioSelect,
-        label="Choose your preferred job from below",
-        blank=True,
-    )
-    treatment = models.StringField() # This must be defined here as it's used in Subsession.creating_session
+    chosen_job_tile = models.IntegerField(blank=True)
+    treatment = models.StringField()
+    # --- REMOVED: This field is no longer necessary with the modal design ---
+    # confirm_or_go_back = models.StringField()
 
-    # New fields for willingness to pay questionnaire
-    # Use Currency or FloatField for monetary values
-    # Make them optional by setting blank=True and null=True
-    # Add min and max values for data validation
-    # Use Currency field if you want oTree to handle currency formatting automatically
-    # Otherwise, FloatField is fine if you want to handle formatting yourself or
-    # if the input is not strictly monetary (e.g., could be 0 for not willing to pay)
     willingness_to_pay_gym = models.CurrencyField(
         label="What is the maximum amount you would be willing to pay per year for a premium gym membership (access to all facilities, classes, etc.)?",
         blank=True,
@@ -89,11 +115,6 @@ class Introduction(Page):
     def is_displayed(self):
         return self.round_number == 1
 
-    def vars_for_template(self):
-        return dict(
-            instructions="You will be presented with different job offers. For each, you will decide whether to accept or reject. At the end, you will choose your preferred job from a list."
-        )
-    
 class ValuePerception(Page):
     form_model = 'player'
     form_fields = ['willingness_to_pay_gym', 'willingness_to_pay_bike']
@@ -101,11 +122,6 @@ class ValuePerception(Page):
     def is_displayed(self):
         # This ensures the page is only shown in the first round.
         return self.round_number == 1
-
-    # LOGGING POINT #1: Check data at the end of the previous page
-    # def before_next_page(self, timeout_happened):
-        # logging.info(f"--- before_next_page (from ValuePerception, R{self.round_number}): CHECKING Player {self.id_in_group}. Treatment is '{self.treatment}' ---")
-
 
 class JobOffer(Page):
     form_model = 'player'
@@ -151,29 +167,23 @@ class BonusChoice(Page):
         treatment = self.participant.vars['treatment_order'][self.round_number - 1]
         return treatment == 'Choice' and self.field_maybe_none('accept_offer') is True
 
-
-class JobTiles(Page):
+# --- REFACTORED: Merged JobTiles and JobDescriptionPage into JobSelection ---
+class JobSelection(Page):
     form_model = 'player'
     form_fields = ['chosen_job_tile']
 
     def is_displayed(self):
+        # Only display this page in the final round
         return self.round_number == Constants.num_rounds
 
     def vars_for_template(self):
-        # Prepare the list with indices directly in Python
-        jobs_with_indices = []
-        for i, job in enumerate(Constants.JOB_TILES):
-            jobs_with_indices.append({'index': i, 'data': job})
-        
+        # Pass the job data to the template. json.dumps is not needed for this.
         return dict(
-            job_tiles=Constants.JOB_TILES, # You can keep this if needed elsewhere
-            jobs_with_indices=jobs_with_indices # Pass the enumerated list
+            job_tiles=Constants.JOB_TILES,
         )
-
 
 class ResultsSummary(Page):
     def is_displayed(self):
-        # Constants.num_rounds, not Constants.NUM_ROUNDS
         return self.round_number == Constants.num_rounds
 
     def vars_for_template(self):
@@ -193,11 +203,11 @@ class ResultsSummary(Page):
             })
         
         chosen_job = None
-        if self.chosen_job_tile is not None:
+        if self.field_maybe_none('chosen_job_tile') is not None:
             chosen_job = Constants.JOB_TILES[self.chosen_job_tile]
 
         # Get the player object from Round 1 to access WTP values
-        # self.player.in_round(1) retrieves the player object for the current participant in round 1.
+        # self.in_round(1) retrieves the player object for the current participant in round 1.
         player_round_1 = self.in_round(1) 
             
         return dict(
@@ -208,4 +218,5 @@ class ResultsSummary(Page):
             willingness_to_pay_bike=player_round_1.willingness_to_pay_bike,
         )
 
-page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobTiles, ResultsSummary]
+# --- UPDATED: page_sequence now uses the new JobSelection page ---
+page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobSelection, ResultsSummary]
