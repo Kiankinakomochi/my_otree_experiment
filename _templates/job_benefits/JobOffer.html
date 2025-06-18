@@ -1,152 +1,130 @@
-{# ------------------------------------------------------------ #}
-{# my_otree_experiment/_templates/job_benefits/JobOffer.html #}
-{# ------------------------------------------------------------ #}
 {% extends "global/Page.html" %}
 {% load otree %}
 
 {% block content %}
-    <style>
-        /* Basic Styling for the Page */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-        }
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+    }
+    .otree-content {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 30px auto;
+    }
+    h2, h3 {
+        color: #0056b3;
+    }
+    strong {
+        color: #0056b3;
+    }
+    .instruction {
+        background-color: #e7f3ff;
+        border-left: 5px solid #007bff;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    button[type="submit"] {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+    }
+    button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+    .choice-block {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 5px;
+        background-color: #fafafa;
+    }
+    /* Hide the bike choice block initially */
+    #bike-choice-block {
+        display: none;
+    }
+    .otree-form-group {
+        padding: 1rem 0;
+    }
+</style>
 
-        /* Container for the Content */
-        .otree-content {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 700px;
-            margin: 30px auto;
-            text-align: center; /* Center the content within the container */
-        }
-
-        h2 {
-            color: #0056b3;
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-
-        p {
-            font-size: 1.1em;
-            margin-bottom: 15px; /* Slightly adjusted margin for paragraphs */
-        }
-
-        strong {
-            color: #0056b3; /* Highlight strong text */
-        }
-
-        /* Form and Radio Button Styling */
-        form {
-            margin-top: 30px;
-        }
-
-        /* --- NEW/MODIFIED CSS for Horizontal Radio Buttons --- */
-        .form-group { /* OTree's default wrapper for form fields, where radio buttons typically reside */
-            display: flex; /* Use flexbox for horizontal alignment */
-            flex-direction: column; /* Stack the label and then the choices */
-            align-items: center; /* Center the group horizontally */
-            margin-bottom: 25px; /* Spacing below the radio button group */
-            margin-top: 15px; /* Spacing above the radio button group */
-        }
-
-        .form-group label { /* The main question label for the radio buttons */
-            font-size: 1.1em;
-            font-weight: bold;
-            margin-bottom: 10px; /* Space below the question */
-            display: block; /* Ensure it's on its own line */
-            color: #333;
-        }
-
-        .choices-horizontal {
-            display: flex; /* Flexbox for horizontal radio buttons */
-            gap: 25px; /* Space between "Yes" and "No" options */
-            justify-content: center; /* Center the "Yes" and "No" options */
-            flex-wrap: wrap; /* Allow wrapping on smaller screens if necessary */
-        }
-
-        .choices-horizontal input[type="radio"] {
-            transform: scale(1.5); /* Make radio button larger */
-            margin-right: 8px; /* Space between radio button and its label */
-            vertical-align: middle; /* Align radio button vertically with text */
-        }
-
-        .choices-horizontal label { /* Labels for "Yes" and "No" */
-            font-weight: normal; /* Make choice labels not bold */
-            font-size: 1.1em;
-            margin-left: 0; /* Reset margin from previous label styles */
-            display: inline-flex; /* Use inline-flex to align input and label */
-            align-items: center; /* Vertically center checkbox and its label */
-            cursor: pointer;
-        }
-        /* --- END NEW/MODIFIED CSS --- */
-
-
-        /* Button Styling */
-        button[type="submit"] {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-top: 20px; /* Space above the submit button */
-        }
-
-        button[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-
-        /* Instruction specific styling */
-        .instruction {
-            background-color: #e7f3ff; /* Light blue background */
-            border-left: 5px solid #007bff; /* Blue left border */
-            padding: 15px 20px;
-            margin-bottom: 20px; /* Space below the instruction block */
-            border-radius: 5px;
-            font-size: 1.1em;
-            color: #333;
-            text-align: left; /* Ensure text aligns left within the instruction box */
-        }
-    </style>
-
+<div class="otree-content">
+    <h2>Job Offer – Round {{ player.round_number }}</h2>
     <div class="instruction">
-        You will be presented with a job offer that includes a form of benefit. Please decide whether to accept or reject this offer.
+        <p>You will be presented with a job offer. Please review the details and make your decision.</p>
     </div>
 
-    <div class="otree-content">
-        <h2>Job Offer € Round {{ player.round_number }}</h2>
+    <form method="post">
 
-        <p>Base Salary: €{{ base_salary }}</p>
-        <p><strong>Bonus Offer:</strong> {{ bonus_desc }}</p>
+        {# ================================================================= #}
+        {# ====== SECTION 1: NEW 'CHOICE' TREATMENT INTERFACE ============== #}
+        {# ================================================================= #}
+        {% if treatment == 'Choice' %}
+            <p>For the following offers, you have three options: accept the cash equivalent based on your previous valuation, accept the non-monetary benefit itself, or reject the offer.</p>
 
-        <form method="post">
-            {# --- Modified HTML structure for horizontal radio buttons --- #}
-            <div class="form-group">
-                <label>Do you accept this job offer?</label> {# The main question #}
-                <div class="choices-horizontal">
-                    {# OTree's formfield will render the radio buttons and their individual labels #}
-                    {{ form.accept_offer }}
-                </div>
+            <div id="gym-choice-block" class="choice-block">
+                <h3>Offer 1: Gym Membership</h3>
+                <p>You are offered a job with a base salary of <strong>€{{ Constants.BASE_SALARY }}/month</strong> plus one of the following options. Please choose one.</p>
+                {% formfield player.gym_choice  label='Your choice for the Gym Membership offer:' %}
             </div>
-            
-            <button type="submit">Submit</button>
-        </form>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Job Offer page loaded.');
-            // You can add specific JavaScript for this page here if needed,
-            // for example, to dynamically show/hide elements based on selections.
+            <div id="bike-choice-block" class="choice-block">
+                <h3>Offer 2: Work Bike</h3>
+                <p>You are also presented with a second, independent offer for the same base salary. Please choose one.</p>
+                {% formfield player.bike_choice label='Your choice for the Work Bike offer:' %}
+            </div>
+
+        {# ================================================================= #}
+        {# ====== SECTION 2: ORIGINAL TREATMENT INTERFACE ================== #}
+        {# ================================================================= #}
+        {% else %}
+            <p>Base Salary: <strong>€{{ base_salary }}/month</strong></p>
+            <p><strong>Bonus Offer:</strong> {{ bonus_desc }}</p>
+
+            <div class="form-group">
+                {% formfield player.accept_offer %}
+            </div>
+        {% endif %}
+
+        <hr>
+        <button type="submit">Submit Decision</button>
+    </form>
+</div>
+
+{% if treatment == 'Choice' %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const gymChoiceRadios = document.querySelectorAll('input[name="gym_choice"]');
+        const bikeChoiceBlock = document.getElementById('bike-choice-block');
+
+        // Function to show the bike choice block
+        function showBikeChoice() {
+            bikeChoiceBlock.style.display = 'block';
+        }
+
+        // Add event listener to each radio button in the gym choice group
+        gymChoiceRadios.forEach(radio => {
+            radio.addEventListener('change', showBikeChoice);
         });
-    </script>
+
+        // If a choice was already made (e.g., on a page reload after an error), show the block
+        const checkedGymRadio = document.querySelector('input[name="gym_choice"]:checked');
+        if (checkedGymRadio) {
+            showBikeChoice();
+        }
+    });
+</script>
+{% endif %}
+
 {% endblock %}

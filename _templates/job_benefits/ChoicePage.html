@@ -1,0 +1,176 @@
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block title %}
+    Job Offer Decisions – Round {{ player.round_number }}
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Basic Styling for the Page */
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+    }
+
+    /* Container for the Content - applied by oTree's base template */
+    .otree-content {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px; /* Increased width slightly for more space */
+        margin: 30px auto;
+    }
+
+    h2 {
+        color: #0056b3;
+        margin-bottom: 20px;
+        font-size: 2em;
+        text-align: center;
+    }
+
+    p {
+        font-size: 1.1em;
+        margin-bottom: 15px;
+    }
+
+    strong {
+        color: #0056b3; /* Highlight strong text */
+    }
+
+    /* Card styling to group decisions */
+    .decision-card {
+        text-align: left;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 25px;
+        margin-top: 25px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .decision-card ul {
+        list-style-position: inside;
+        padding-left: 0;
+    }
+
+    /* --- CSS for oTree RadioSelect (Adapted from your styles) --- */
+    /* This targets the div oTree creates for a form field */
+    ._formfield {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Center the group horizontally */
+        margin-top: 25px;
+        margin-bottom: 15px;
+    }
+
+    /* This targets the question/label for the radio button set */
+    ._formfield > .col-form-label {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 15px;
+        display: block;
+        color: #333;
+        text-align: center;
+    }
+
+    /* This targets the container holding the radio button choices */
+    ._formfield .controls {
+        display: flex;
+        gap: 25px; /* Space between choices */
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* This targets each individual choice (the wrapper for a radio button and its label) */
+    ._formfield .form-check {
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    ._formfield .form-check input[type="radio"] {
+        transform: scale(1.5);
+        margin-right: 8px;
+    }
+
+    ._formfield .form-check label {
+        font-weight: normal;
+        font-size: 1.1em;
+        margin-left: 0;
+        margin-bottom: 0; /* Override oTree default margin */
+    }
+    /* --- END RadioSelect CSS --- */
+
+
+    /* Button Styling */
+    .otree-btn-next {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 30px;
+        display: block; /* Make it a block element */
+        width: fit-content; /* Size to content */
+        margin-left: auto; /* Center with margin */
+        margin-right: auto; /* Center with margin */
+    }
+
+    .otree-btn-next:hover {
+        background-color: #0056b3;
+    }
+
+    /* Instruction specific styling */
+    .instruction {
+        background-color: #e7f3ff;
+        border-left: 5px solid #007bff;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+        border-radius: 5px;
+        font-size: 1.1em;
+        color: #333;
+        text-align: left;
+    }
+</style>
+
+<h2>Job Offer Decisions</h2>
+
+<p class="instruction">
+    In this round, you will be presented with two separate job offers. For each offer, you will choose between a cash bonus (equal to your previously stated willingness to pay) or the non-monetary benefit itself. You can also reject both options. The base salary for all options is <strong>€{{ Constants.BASE_SALARY }}</strong>.
+</p>
+
+<form method="post">
+
+    <div class="decision-card">
+        <h4 style="text-align: center; color: #333;">Decision 1: Gym Membership Offer</h4>
+        <p style="text-align: center;">Please choose one of the following three options:</p>
+        <ul>
+            <li><strong>Option 1:</strong> A job with a base salary of €{{ Constants.BASE_SALARY }} and a one-time cash bonus of <strong>€{{ wtp_gym }}</strong>.</li>
+            <li><strong>Option 2:</strong> A job with a base salary of €{{ Constants.BASE_SALARY }} and a <strong>premium gym membership</strong>.</li>
+            <li><strong>Option 3:</strong> Reject both of these options.</li>
+        </ul>
+        {% formfield player.choice_gym label="" %}
+    </div>
+
+    <div class="decision-card">
+        <h4 style="text-align: center; color: #333;">Decision 2: Work Bike Offer</h4>
+        <p style="text-align: center;">Please choose one of the following three options:</p>
+        <ul>
+            <li><strong>Option 1:</strong> A job with a base salary of €{{ Constants.BASE_SALARY }} and a one-time cash bonus of <strong>€{{ wtp_bike }}</strong>.</li>
+            <li><strong>Option 2:</strong> A job with a base salary of €{{ Constants.BASE_SALARY }} and a <strong>work bike</strong> (including maintenance and insurance).</li>
+            <li><strong>Option 3:</strong> Reject both of these options.</li>
+        </ul>
+        {% formfield player.choice_bike label="" %}
+    </div>
+
+    <button type="submit" class="otree-btn-next">Submit Decisions</button>
+</form>
+
+{% endblock %}

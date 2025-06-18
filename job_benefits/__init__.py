@@ -60,17 +60,26 @@ class Constants(BaseConstants):
 
 class Subsession(BaseSubsession):
     def creating_session(self):
-        # Initialize treatment order if not already done (for all players across all rounds)
+        """
+        This method runs at the start of each round. The corrected logic ensures
+        that the treatment order is created for a participant if it doesn't exist,
+        and then assigns the current round's treatment from that order.
+        This robustly handles all rounds and players joining mid-session.
+        """
         for p in self.get_players():
+            # Step 1: Check if the treatment order has been created for this participant.
+            # If not, create and shuffle it for them. This will run in Round 1
+            # for all players, and also for any player joining a session late.
             if 'treatment_order' not in p.participant.vars:
                 treatments = list(Constants.TREATMENTS)
                 random.shuffle(treatments)
                 p.participant.vars['treatment_order'] = treatments
-
-
-        # Now we populate p.treatment from the treatment order immediately:
-        for p in self.get_players():
-            p.treatment = p.participant.vars['treatment_order'][p.round_number - 1]
+            
+            # Step 2: Now that we have guaranteed 'treatment_order' exists, we can
+            # safely retrieve the order and assign the treatment for the current round.
+            # The round_number is 1-based, list index is 0-based, so we subtract 1.
+            treatment_order = p.participant.vars['treatment_order']
+            p.treatment = treatment_order[self.round_number - 1]
 
             
 
@@ -80,14 +89,13 @@ class Group(BaseGroup):
 
 
 class Player(BasePlayer):
-    accept_offer = models.BooleanField(label="Do you accept this job offer?")
-    perk_offered = models.StringField(blank=True) # Storing the specific perk offered
-    choice_bonus = models.StringField(
-        choices=['Cash Bonus', 'Gym Membership', 'Work Bike'],
-        widget=widgets.RadioSelect,
-        blank=True,
-        label="If you chose the Choice treatment, select your preferred bonus"
-    )
+    # Field for original treatments
+    accept_offer = models.BooleanField(label="Do you accept this job offer?", blank=True)
+    perk_offered = models.StringField(blank=True)
+
+    # --- REMOVED: This field is no longer needed as BonusChoice page is removed ---
+    # choice_bonus = models.StringField(...)
+
     chosen_job_tile = models.IntegerField(blank=True)
     treatment = models.StringField()
     # --- REMOVED: This field is no longer necessary with the modal design ---
@@ -104,9 +112,20 @@ class Player(BasePlayer):
         blank=True, min=0, max=10000
     )
 
-    # --- NEW FIELD ---
-    # This field will store a JSON string of the time spent on each modal.
-    # e.g., '{"Analyst": 5500, "Developer": 12345}'
+    # --- NEW FIELDS for the refactored 'Choice' treatment ---
+    gym_choice = models.StringField(
+        label="Your choice for the Gym Membership offer:",
+        choices=[['Cash', 'Accept Cash Offer'], ['Benefit', 'Accept Gym Membership'], ['Reject', 'Reject Offer']],
+        widget=widgets.RadioSelect,
+        blank=True
+    )
+    bike_choice = models.StringField(
+        label="Your choice for the Work Bike offer:",
+        choices=[['Cash', 'Accept Cash Offer'], ['Benefit', 'Accept Work Bike'], ['Reject', 'Reject Offer']],
+        widget=widgets.RadioSelect,
+        blank=True
+    )
+
     modal_time_log = models.StringField(blank=True)
 
 
@@ -125,54 +144,54 @@ class ValuePerception(Page):
 
 class JobOffer(Page):
     form_model = 'player'
-    form_fields = ['accept_offer']
 
-    def vars_for_template(self): # <--- This line needs to be indented
-        # --- FIX: Ensure treatment_order exists before accessing it ---
+    def get_form_fields(self):
         if 'treatment_order' not in self.participant.vars:
             treatments = list(Constants.TREATMENTS)
             random.shuffle(treatments)
             self.participant.vars['treatment_order'] = treatments
-        # STEP 1: Derive the treatment directly from the reliable source of truth.
-        treatment = self.participant.vars['treatment_order'][self.round_number]
-        self.treatment = treatment  # Store the treatment in the player instance for later usefi
+        # Dynamically set form fields based on the treatment for the current round
+        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        if treatment == 'Choice':
+            return ['gym_choice', 'bike_choice']
+        else:
+            return ['accept_offer']
+
+    def vars_for_template(self):
+        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
+        self.treatment = treatment  # Store treatment for the record
 
         bonus_desc = ""
-        adjusted_base_salary = Constants.BASE_SALARY  # Default to base salary
+        adjusted_salary = Constants.BASE_SALARY  # Default salary
+        player_in_round_1 = self.in_round(1)
+
         if treatment == 'Cash Bonus':
             bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
         elif treatment == 'Non-Monetary Perk':
-            # --- FIX: Set perk_offered here for Non-Monetary Perk treatment ---
-            if self.treatment == 'Non-Monetary Perk':
-                self.perk_offered = random.choice(Constants.NON_MONETARY_PERKS)
-                if(self.perk_offered == 'Gym Membership'):
-                    adjusted_base_salary = Constants.BASE_SALARY - self.in_round(1).willingness_to_pay_gym
-                elif(self.perk_offered == 'Work Bike'):
-                    adjusted_base_salary = Constants.BASE_SALARY - self.in_round(1).willingness_to_pay_bike
-            else:
-                # Ensure it's explicitly set to None or empty string if not a non-monetary perk
-                # This prevents it from holding a value from a previous round if a player
-                # switches from 'Non-Monetary Perk' to another treatment.
-                self.perk_offered = '' # Or None, depending on preference. Empty string is often safer for StringField.
-            bonus_desc = f"Non-monetary perk: {self.perk_offered}"
+            perk = random.choice(Constants.NON_MONETARY_PERKS)
+            self.perk_offered = perk
+            if perk == 'Gym Membership':
+                adjusted_salary -= self.in_round(1).willingness_to_pay_gym
+            elif perk == 'Work Bike':
+                adjusted_salary -= self.in_round(1).willingness_to_pay_bike
+            bonus_desc = f"Non-monetary perk: {perk}"
         elif treatment == 'Choice':
-            bonus_desc = f"You can choose either a cash bonus of €{Constants.CASH_BONUS} or a non-monetary perk (Gym Membership or Work Bike)."
+            # No bonus_desc needed as the choices are detailed in the template
+            pass
 
         return dict(
-            base_salary=adjusted_base_salary,
+            base_salary=adjusted_salary,
             treatment=treatment,
             bonus_desc=bonus_desc,
+            # Pass WTP values for the 'Choice' treatment template
+            wtp_gym=player_in_round_1.willingness_to_pay_gym,
+            wtp_bike=player_in_round_1.willingness_to_pay_bike,
+            # For robustness in template
+            Constants=Constants
         )
-class BonusChoice(Page):
-    form_model = 'player'
-    form_fields = ['choice_bonus']
 
-    def is_displayed(self):
-        # This page's display logic must also use the reliable source of truth.
-        treatment = self.participant.vars['treatment_order'][self.round_number - 1]
-        return treatment == 'Choice' and self.field_maybe_none('accept_offer') is True
+# --- The BonusChoice page is no longer needed and should be removed ---
 
-# --- REFACTORED: Merged JobTiles and JobDescriptionPage into JobSelection ---
 class JobSelection(Page):
     form_model = 'player'
     # --- ADDED `modal_time_log` TO THE FORM FIELDS ---
@@ -196,18 +215,35 @@ class ResultsSummary(Page):
         accepted_treatments = []
         for p in self.in_all_rounds():
             bonus_info = "N/A"
-            if p.treatment == 'Choice' and p.accept_offer:
-                bonus_info = p.choice_bonus
+            accepted_info = "No" # Default
+
+            if p.treatment == 'Choice':
+                # For choice, we summarize the two decisions
+                gym = p.gym_choice or "No decision"
+                bike = p.bike_choice or "No decision"
+                bonus_info = f"Gym: {gym}, Bike: {bike}"
+                # Consider it "accepted" if at least one benefit/cash was chosen
+                if p.gym_choice != 'Reject' or p.bike_choice != 'Reject':
+                     accepted_info = "Yes (at least one)"
+
             elif p.treatment == 'Non-Monetary Perk':
                 bonus_info = p.perk_offered
+                if p.accept_offer:
+                    accepted_info = "Yes"
+            
+            elif p.treatment == 'Cash Bonus':
+                bonus_info = f"€{Constants.CASH_BONUS}"
+                if p.accept_offer:
+                    accepted_info = "Yes"
+
 
             accepted_treatments.append({
                 'round_number': p.round_number,
                 'treatment': p.treatment,
-                'accepted': "Yes" if p.accept_offer else "No",
+                'accepted': accepted_info,
                 'bonus_info': bonus_info,
             })
-        
+
         chosen_job = None
         if self.field_maybe_none('chosen_job_tile') is not None:
             chosen_job = Constants.JOB_TILES[self.chosen_job_tile]
@@ -225,5 +261,6 @@ class ResultsSummary(Page):
             willingness_to_pay_bike=player_round_1.willingness_to_pay_bike,
         )
 
-# --- UPDATED: page_sequence now uses the new JobSelection page ---
-page_sequence = [Introduction, ValuePerception, JobOffer, BonusChoice, JobSelection, ResultsSummary]
+
+# --- UPDATED page_sequence: BonusChoice is removed ---
+page_sequence = [Introduction, ValuePerception, JobOffer, JobSelection, ResultsSummary]
