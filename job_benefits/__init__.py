@@ -214,6 +214,7 @@ class ResultsSummary(Page):
         return dict(
             accepted_treatments=accepted_treatments,
             chosen_job=chosen_job,
+            modal_time_log=self.modal_time_log,  
             # Pass the willingness to pay values from the player object of Round 1
             willingness_to_pay_gym=player_round_1.willingness_to_pay_gym,
             willingness_to_pay_bike=player_round_1.willingness_to_pay_bike,
