@@ -138,12 +138,17 @@ class JobOffer(Page):
         self.treatment = treatment  # Store the treatment in the player instance for later usefi
 
         bonus_desc = ""
+        adjusted_base_salary = Constants.BASE_SALARY  # Default to base salary
         if treatment == 'Cash Bonus':
             bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
         elif treatment == 'Non-Monetary Perk':
             # --- FIX: Set perk_offered here for Non-Monetary Perk treatment ---
             if self.treatment == 'Non-Monetary Perk':
                 self.perk_offered = random.choice(Constants.NON_MONETARY_PERKS)
+                if(self.perk_offered == 'Gym Membership'):
+                    adjusted_base_salary = Constants.BASE_SALARY - self.in_round(1).willingness_to_pay_gym
+                elif(self.perk_offered == 'Work Bike'):
+                    adjusted_base_salary = Constants.BASE_SALARY - self.in_round(1).willingness_to_pay_bike
             else:
                 # Ensure it's explicitly set to None or empty string if not a non-monetary perk
                 # This prevents it from holding a value from a previous round if a player
@@ -154,7 +159,7 @@ class JobOffer(Page):
             bonus_desc = f"You can choose either a cash bonus of €{Constants.CASH_BONUS} or a non-monetary perk (Gym Membership or Work Bike)."
 
         return dict(
-            base_salary=Constants.BASE_SALARY,
+            base_salary=adjusted_base_salary,
             treatment=treatment,
             bonus_desc=bonus_desc,
         )
