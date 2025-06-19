@@ -1,202 +1,111 @@
 {% extends "global/Page.html" %}
 {% load otree %}
 
+{% block title %}
+    Select Your Benefit Package
+{% endblock %}
+
 {% block content %}
 
 <style>
-    /* General Page Styles */
     .otree-content { max-width: 900px; margin: 30px auto; }
-    h2 { color: #0056b3; margin-bottom: 20px; font-size: 2em; text-align: center; }
-    p.instructions { text-align: center; margin-bottom: 25px; }
+    h2 { color: #0056b3; margin-bottom: 5px; font-size: 2em; text-align: center; }
+    p.instructions { text-align: center; margin-bottom: 30px; font-size: 1.2em; color: #333; }
 
-    /* Job Tiles Grid */
-    .job-tiles-container {
+    /* Package Cards Grid */
+    .package-container {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: 1fr; /* Each card takes a full row */
         gap: 20px;
     }
-    .job-tile {
+    .package-card {
         background-color: #fdfdfd;
         border: 1px solid #ddd;
-        padding: 20px;
+        padding: 25px;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        text-align: left;
-        cursor: pointer;
         transition: all 0.2s ease-in-out;
+        cursor: pointer;
     }
-    .job-tile:hover {
+    .package-card:hover {
         border-color: #007bff;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         transform: translateY(-3px);
     }
-    .job-tile strong { font-size: 1.3em; color: #0056b3; }
-    .job-tile .wage { font-weight: bold; color: #28a745; margin-top: 10px; }
-    .job-tile .benefits { color: #555; margin-top: 5px; }
 
-    /* Modal Styles */
-    .modal {
-        display: none; position: fixed; z-index: 1000;
-        left: 0; top: 0; width: 100%; height: 100%;
-        overflow: auto; background-color: rgba(0,0,0,0.6);
+    /* Card Content */
+    .package-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
-    .modal-content {
-        background-color: #fefefe; margin: 5% auto; padding: 30px 40px;
-        border: 1px solid #888; width: 80%; max-width: 700px;
-        border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        text-align: left;
+    .package-header input[type="radio"] {
+        transform: scale(1.3);
     }
-    .modal-content h3 { font-size: 2em; color: #0056b3; margin-bottom: 15px; }
-    .modal-content .salary-text { color: #28a745; font-weight: bold; }
-    .modal-content ul { list-style-position: inside; padding-left: 10px; }
-    .modal-content li { margin-bottom: 10px; }
+    .package-header label {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #0056b3;
+    }
+    .package-details {
+        margin-top: 15px;
+        padding-left: 38px; /* Align with label */
+    }
+    .package-details p {
+        margin-bottom: 10px;
+        color: #555;
+    }
+    .package-details .wage { font-weight: bold; color: #28a745; font-size: 1.1em; }
+    .package-details ul {
+        list-style-type: disc;
+        list-style-position: inside;
+        padding-left: 5px;
+    }
+    .package-details li {
+        margin-bottom: 5px;
+    }
 
-    /* Button Styles */
-    .button-group { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; }
-    .btn {
-        padding: 12px 25px; border: none; border-radius: 5px;
-        font-size: 1.1em; cursor: pointer; transition: background-color 0.3s ease;
-    }
-    .btn-primary { background-color: #007bff; color: white; }
-    .btn-primary:hover { background-color: #0056b3; }
-    .btn-secondary { background-color: #6c757d; color: white; }
-    .btn-secondary:hover { background-color: #5a6268; }
+    /* Submit button */
+    .next-btn-container { text-align: center; margin-top: 30px;}
 </style>
 
 <div class="otree-content">
-    <h2>Select Your Preferred Job</h2>
-    <p class="instructions">Click on a job tile to see a detailed description. You can then confirm your choice.</p>
+    <h2>Benefit Package Selection</h2>
+    <p class="instructions">For the <strong>{{ job_title }}</strong> role, please choose one of the following benefit packages.</p>
 
-    <form method="post" id="job-selection-form">
-        <input type="hidden" name="chosen_job_tile" id="chosen_job_tile_input">
-        <input type="hidden" name="modal_time_log" id="modal_time_log_input">
-
-        <div class="job-tiles-container">
-            {% for job in job_tiles %}
-            <div class="job-tile" data-index="{{ forloop.counter0 }}" data-title="{{ job.title }}">
-                <strong>{{ job.title }}</strong>
-                <div class="wage">Wage: €{{ job.wage }}</div>
-                <div class="benefits">Benefits: {{ job.benefits }}</div>
+    <form method="post">
+        <div class="package-container">
+            {% for choice in form.chosen_benefit_package %}
+            <div class="package-card" onclick="document.getElementById('{{ choice.id_for_label }}').click()">
+                <div class="package-header">
+                    {{ choice.tag }}
+                    <label for="{{ choice.id_for_label }}">{{ packages|get_item:choice.data.value|get_item:'name' }}</label>
+                </div>
+                {% with package=packages|get_item:choice.data.value %}
+                <div class="package-details">
+                    <p>{{ package.description }}</p>
+                    <p class="wage">
+                        Final Monthly Wage: €{{ base_wage|add:package.wage_adjustment }}
+                        <span style="font-size: 0.9em; color: #666;">
+                            (Base: €{{ base_wage }}, Adjustment: €{{ package.wage_adjustment }})
+                        </span>
+                    </p>
+                    <strong>Benefits include:</strong>
+                    <ul>
+                        {% for benefit in package.benefits %}
+                        <li>{{ benefit }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endwith %}
             </div>
             {% endfor %}
         </div>
         
-        <div id="job-modal" class="modal">
-            <div class="modal-content">
-                <h3 id="modal-title"></h3>
-                <p id="modal-description"></p>
-                <hr>
-                <p><strong>Salary:</strong> <span id="modal-wage" class="salary-text"></span> / month</p>
-                <div>
-                    <strong>Benefits:</strong>
-                    <ul id="modal-benefits"></ul>
-                </div>
-                <div class="button-group">
-                    <button type="button" id="modal-back-btn" class="btn btn-secondary">Back to Selection</button>
-                    <button type="submit" id="modal-confirm-btn" class="btn btn-primary">Confirm Choice</button>
-                </div>
-            </div>
+        <div class="next-btn-container">
+            {% next_button %}
         </div>
-
     </form>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const jobTilesData = {{ job_tiles|json }};
-    const modal = document.getElementById('job-modal');
-    const form = document.getElementById('job-selection-form');
-    const chosenJobInput = document.getElementById('chosen_job_tile_input');
-    const timeLogInput = document.getElementById('modal_time_log_input');
-    const backBtn = document.getElementById('modal-back-btn');
-    const confirmBtn = document.getElementById('modal-confirm-btn');
-
-    // --- Time Tracking Variables ---
-    let timeLog = {};
-    let modalOpenTime;
-    let currentlyOpenJobTitle;
-
-    // --- Function to OPEN the modal ---
-    function openModal(jobIndex) {
-        const jobData = jobTilesData[jobIndex];
-        currentlyOpenJobTitle = jobData.title;
-
-        // Set the hidden input for the job choice
-        chosenJobInput.value = jobIndex;
-
-        // Populate modal content
-        document.getElementById('modal-title').textContent = jobData.title;
-        document.getElementById('modal-description').textContent = jobData.description;
-        document.getElementById('modal-wage').textContent = `€${jobData.wage}`;
-        const benefitsList = document.getElementById('modal-benefits');
-        benefitsList.innerHTML = '';
-        jobData.benefits.forEach(benefitName => {
-            const li = document.createElement('li');
-            const benefitDescription = jobData.benefit_details[benefitName] || 'Details not available.';
-            li.innerHTML = `<strong>${benefitName}:</strong> ${benefitDescription}`;
-            benefitsList.appendChild(li);
-        });
-        
-        // Start the timer and show the modal
-        modalOpenTime = new Date().getTime();
-        modal.style.display = 'block';
-    }
-
-    // --- Function to CLOSE the modal and LOG the time ---
-    function closeModalAndLogTime() {
-        if (!modalOpenTime) return;
-
-        const timeElapsed = new Date().getTime() - modalOpenTime;
-        
-        if (timeLog[currentlyOpenJobTitle]) {
-            timeLog[currentlyOpenJobTitle] += timeElapsed;
-        } else {
-            timeLog[currentlyOpenJobTitle] = timeElapsed;
-        }
-
-        modal.style.display = 'none';
-        modalOpenTime = null;
-        currentlyOpenJobTitle = null;
-    }
-
-    // --- Event Listeners ---
-
-    // 1. Listen for clicks on the job tiles to open the modal
-    document.querySelectorAll('.job-tile').forEach(tile => {
-        tile.addEventListener('click', function() {
-            openModal(this.dataset.index);
-        });
-    });
-
-    // 2. Listen for clicks on the "Back" button to close the modal
-    backBtn.addEventListener('click', function() {
-        closeModalAndLogTime();
-        chosenJobInput.value = ''; // Clear selection when going back
-    });
-
-    // 3. Listen for clicks on the background to close the modal
-    window.addEventListener('click', function(event) {
-        if (event.target == modal) {
-            closeModalAndLogTime();
-            chosenJobInput.value = ''; // Clear selection when going back
-        }
-    });
-
-    // 4. Listen for clicks on the final "Confirm" button
-    confirmBtn.addEventListener('click', function() {
-        if (chosenJobInput.value === '') {
-            alert('Please make a selection first.');
-            return;
-        }
-        
-        // Log the final viewing time
-        closeModalAndLogTime();
-        
-        // Finalize data and submit the form
-        timeLogInput.value = JSON.stringify(timeLog);
-        form.submit();
-    });
-});
-</script>
 
 {% endblock %}
