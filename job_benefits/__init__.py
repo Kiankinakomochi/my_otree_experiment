@@ -1,8 +1,11 @@
 import logging
 from otree.api import *
-import random # Import random here as well if not already present
+import random
 
-# Define Constants, Subsession, Group, Player first
+# =============================================================================
+# 1. MODELS
+# =============================================================================
+
 class Constants(BaseConstants):
     name_in_url = 'job_benefits'
     players_per_group = None
@@ -18,50 +21,44 @@ class Constants(BaseConstants):
         dict(
             title='Analyst',
             wage=3200,
+            benefits=['Gym Membership', 'Flexible hours'],
             description='As an Analyst, you will be responsible for collecting, interpreting, and presenting data to help the organization make informed decisions. This role requires strong analytical skills and attention to detail.',
+            benefit_details={
+                'Gym Membership': 'Access to a premium gym facility with classes and personal training options.',
+                'Flexible hours': 'The ability to adjust your work schedule to better fit your personal needs and commitments.'
+            }
         ),
         dict(
             title='Developer',
             wage=3300,
+            benefits=['Work Bike', 'Extra vacation days'],
             description='As a Developer, you will design, build, and maintain software applications and systems. You will work on coding, testing, and debugging to create efficient and scalable solutions.',
+            benefit_details={
+                'Work Bike': 'A company-provided bicycle for commuting and personal use, including maintenance and insurance.',
+                'Extra vacation days': 'Additional paid leave beyond the standard allowance to enjoy more personal time.'
+            }
         ),
         dict(
             title='Consultant',
             wage=3100,
+            benefits=['Public transport ticket', 'Training courses'],
             description='As a Consultant, you will provide expert advice and strategic solutions to clients across various industries. This involves identifying problems, developing recommendations, and assisting with implementation.',
+            benefit_details={
+                'Public transport ticket': 'A subsidized or fully covered monthly pass for public transportation.',
+                'Training courses': 'Opportunities to attend professional development courses and workshops to enhance your skills.'
+            }
         ),
         dict(
             title='Manager',
             wage=3500,
             benefits=['Childcare support', 'Health program'],
             description='As a Manager, you will lead a team, oversee projects, and make key strategic decisions to achieve organizational goals. This role demands strong leadership, communication, and organizational skills.',
+            benefit_details={
+                'Childcare support': 'Financial assistance or access to childcare facilities to support working parents.',
+                'Health program': 'Comprehensive wellness programs, including health screenings, fitness challenges, and mental health resources.'
+            }
         ),
     ]
-    
-    # NEW: Benefit packages for each job title for the revised JobSelection page
-    BENEFIT_PACKAGES = {
-        'Analyst': [
-            dict(name='Health & Wellness', benefits=['Gym Membership', 'Health program'], wage_adjustment=0, description="Focuses on physical and mental well-being."),
-            dict(name='Work-Life Balance', benefits=['Flexible hours', 'Extra vacation days'], wage_adjustment=-100, description="Provides more flexibility and time off."),
-            dict(name='Commuter Plus', benefits=['Public transport ticket', 'Work Bike'], wage_adjustment=-50, description="Eases your daily commute."),
-        ],
-        'Developer': [
-            dict(name='Tech Focused', benefits=['Training courses', 'Work Bike'], wage_adjustment=0, description="Supports continuous learning and a healthy commute."),
-            dict(name='Family First', benefits=['Childcare support', 'Flexible hours'], wage_adjustment=-150, description="Offers support for family responsibilities."),
-            dict(name='Peak Performer', benefits=['Health program', 'Extra vacation days'], wage_adjustment=-100, description="Maximizes wellness and personal time."),
-        ],
-        'Consultant': [
-            dict(name='The Traveler', benefits=['Public transport ticket', 'Extra vacation days'], wage_adjustment=0, description="Ideal for those always on the move."),
-            dict(name='Skill Builder', benefits=['Training courses', 'Gym Membership'], wage_adjustment=-50, description="Invests in your professional and personal growth."),
-            dict(name='Flexible Professional', benefits=['Flexible hours', 'Work Bike'], wage_adjustment=-75, description="Combines schedule flexibility with a sustainable commute."),
-        ],
-        'Manager': [
-            dict(name='Executive Health', benefits=['Health program', 'Gym Membership'], wage_adjustment=0, description="A premium package for health and wellness."),
-            dict(name='Family Leader', benefits=['Childcare support', 'Flexible hours'], wage_adjustment=-200, description="Comprehensive support for managers with families."),
-            dict(name='Strategic Growth', benefits=['Training courses', 'Extra vacation days'], wage_adjustment=-150, description="Focuses on leadership development and rejuvenation."),
-        ],
-    }
-
 
 class Subsession(BaseSubsession):
     def creating_session(self):
@@ -79,77 +76,66 @@ class Subsession(BaseSubsession):
                 treatments = list(Constants.TREATMENTS)
                 random.shuffle(treatments)
                 p.participant.vars['treatment_order'] = treatments
-            
             # Step 2: Now that we have guaranteed 'treatment_order' exists, we can
             # safely retrieve the order and assign the treatment for the current round.
             # The round_number is 1-based, list index is 0-based, so we subtract 1.
             treatment_order = p.participant.vars['treatment_order']
             p.treatment = treatment_order[self.round_number - 1]
 
-            
-
-
 class Group(BaseGroup):
     pass
 
-
 class Player(BasePlayer):
-    # Field for original treatments
-    accept_offer = models.BooleanField(label="Do you accept this job offer?", blank=True)
-    perk_offered = models.StringField(blank=True)
-    treatment = models.StringField()
-    # --- REMOVED: This field is no longer necessary with the modal design ---
-    # confirm_or_go_back = models.StringField()
-
+    # --- Fields for ValuePerception page (Round 1) ---
     willingness_to_pay_gym = models.CurrencyField(
         label="What is the maximum amount you would be willing to pay per year for a premium gym membership (access to all facilities, classes, etc.)?",
         blank=True,
-        min=0, # Participants should not be able to enter negative values
-        max=10000, # Set a reasonable maximum to prevent typos (adjust as needed)
+        min=0,
+        max=10000,
     )
     willingness_to_pay_bike = models.CurrencyField(
         label="What is the maximum amount you would be willing to pay per year for a work bicycle (including maintenance and insurance)?",
         blank=True, min=0, max=10000
     )
 
-    # NEW: Fields for the JobTitleSurvey page (shown in round 1)
-    preferred_job_title = models.StringField(
-        label="Please select your preferred job title from the options below:",
-        choices=[job['title'] for job in Constants.JOB_TILES],
-        widget=widgets.RadioSelect,
+    # --- Fields for NEW JobPreference page (Round 1) ---
+    chosen_job_tile = models.IntegerField(
+        label="Please choose your preferred job title from the list below.",
         blank=True
     )
     preferred_salary = models.CurrencyField(
-        label="What is your preferred minimum annual salary for this role?",
-        min=0,
-        blank=True
+        label="What is your preferred yearly salary for this position?",
+        blank=True,
+        min=0
     )
 
-    # CHANGED: This field is now for the benefit package, not the job tile.
-    chosen_benefit_package = models.IntegerField(
-        label="Please select your preferred benefit package.",
-        widget=widgets.RadioSelect, # Choices are set dynamically in the Page class
-        blank=True
-    )
-    
-    # Fields for the 'Choice' treatment
+    # --- Fields for JobOffer page (All Rounds) ---
+    treatment = models.StringField()
+    accept_offer = models.BooleanField(label="Do you accept this job offer?", blank=True)
+    perk_offered = models.StringField(blank=True)
     gym_choice = models.StringField(
-        label="Your choice for the Gym Membership offer:",
         choices=[['Cash', 'Accept Cash Offer'], ['Benefit', 'Accept Gym Membership'], ['Reject', 'Reject Offer']],
         widget=widgets.RadioSelect,
         blank=True
     )
     bike_choice = models.StringField(
-        label="Your choice for the Work Bike offer:",
         choices=[['Cash', 'Accept Cash Offer'], ['Benefit', 'Accept Work Bike'], ['Reject', 'Reject Offer']],
         widget=widgets.RadioSelect,
         blank=True
     )
-
+    
+    # --- Fields for JobSelection page (Final Round) ---
+    chosen_benefit_package = models.StringField(
+        label="From the list of benefits associated with your chosen job, please select one.",
+        blank=True
+    )
     modal_time_log = models.StringField(blank=True)
 
 
-# ... (Introduction, ValuePerception, JobOffer, BonusChoice Pages remain the same) ...
+# =============================================================================
+# 2. PAGES
+# =============================================================================
+
 class Introduction(Page):
     def is_displayed(self):
         return self.round_number == 1
@@ -159,30 +145,36 @@ class ValuePerception(Page):
     form_fields = ['willingness_to_pay_gym', 'willingness_to_pay_bike']
 
     def is_displayed(self):
+        # This ensures the page is only shown in the first round.
         return self.round_number == 1
 
-# NEW PAGE: This page surveys the user for their preferred job title and salary.
-class JobTitleSurvey(Page):
+# --- NEW PAGE ---
+class JobPreference(Page):
+    """
+    New page where participants select their preferred job title and salary.
+    This page is displayed only in the first round.
+    """
     form_model = 'player'
-    form_fields = ['preferred_job_title', 'preferred_salary']
+    form_fields = ['chosen_job_tile', 'preferred_salary']
 
     def is_displayed(self):
-        # Display only in the first round, after value perception.
         return self.round_number == 1
-
+    
     def vars_for_template(self):
-        # Pass job descriptions to the template to help the user choose.
-        return dict(job_tiles=Constants.JOB_TILES)
-
+        return dict(
+            job_tiles=Constants.JOB_TILES
+        )
 
 class JobOffer(Page):
     form_model = 'player'
 
     def get_form_fields(self):
+        # Ensure treatment order exists
         if 'treatment_order' not in self.participant.vars:
             treatments = list(Constants.TREATMENTS)
             random.shuffle(treatments)
             self.participant.vars['treatment_order'] = treatments
+        
         # Dynamically set form fields based on the treatment for the current round
         treatment = self.participant.vars['treatment_order'][self.round_number - 1]
         if treatment == 'Choice':
@@ -198,70 +190,66 @@ class JobOffer(Page):
         adjusted_salary = Constants.BASE_SALARY  # Default salary
         player_in_round_1 = self.in_round(1)
 
+        # Get the job title chosen in round 1
+        chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+        job_title = "General Position" # Default title
+        if chosen_job_index is not None:
+            job_title = Constants.JOB_TILES[chosen_job_index]['title']
+
         if treatment == 'Cash Bonus':
             bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
         elif treatment == 'Non-Monetary Perk':
             perk = random.choice(Constants.NON_MONETARY_PERKS)
             self.perk_offered = perk
+            # The salary adjustment logic remains as it was
             if perk == 'Gym Membership':
-                adjusted_salary -= self.in_round(1).willingness_to_pay_gym
+                adjusted_salary -= player_in_round_1.willingness_to_pay_gym
             elif perk == 'Work Bike':
-                adjusted_salary -= self.in_round(1).willingness_to_pay_bike
+                adjusted_salary -= player_in_round_1.willingness_to_pay_bike
             bonus_desc = f"Non-monetary perk: {perk}"
-        
+        elif treatment == 'Choice':
+            pass
+
         return dict(
+            job_title=job_title,
             base_salary=adjusted_salary,
             treatment=treatment,
             bonus_desc=bonus_desc,
-            # Pass WTP values for the 'Choice' treatment template
             wtp_gym=player_in_round_1.willingness_to_pay_gym,
             wtp_bike=player_in_round_1.willingness_to_pay_bike,
-            # For robustness in template
             Constants=Constants
         )
 
-# MODIFIED PAGE: This page now shows benefit packages for the chosen job title.
 class JobSelection(Page):
+    """
+    This page is now for selecting a benefit package for the chosen job title.
+    """
     form_model = 'player'
-    # --- ADDED `modal_time_log` TO THE FORM FIELDS ---
-    form_fields = ['chosen_job_tile', 'modal_time_log']
+    form_fields = ['chosen_benefit_package', 'modal_time_log']
 
     def is_displayed(self):
         # Only display this page in the final round
         return self.round_number == Constants.num_rounds
 
-    def get_form(self, *args, **kwargs):
-        # This method dynamically sets the choices for the radio buttons
-        # based on the job title selected by the player in round 1.
-        form = super().get_form(*args, **kwargs)
-        player_r1 = self.in_round(1)
-        
-        # Default to first job if player somehow skipped the survey
-        chosen_title = player_r1.preferred_job_title or Constants.JOB_TILES[0]['title']
-        
-        packages = Constants.BENEFIT_PACKAGES.get(chosen_title, [])
-        # Choices are a list of tuples: (value, label)
-        # Here, value is the index of the package.
-        choices = [(i, pkg['name']) for i, pkg in enumerate(packages)]
-        form.fields['chosen_benefit_package'].choices = choices
-        return form
-
-
     def vars_for_template(self):
-        player_r1 = self.in_round(1)
-        chosen_title = player_r1.preferred_job_title or Constants.JOB_TILES[0]['title']
+        player_in_round_1 = self.in_round(1)
+        chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         
-        # Find the base wage for the chosen title
-        job_info = next((job for job in Constants.JOB_TILES if job['title'] == chosen_title), None)
-        base_wage = job_info['wage'] if job_info else 0
-        
-        # Get packages and their descriptions
-        packages_with_details = Constants.BENEFIT_PACKAGES.get(chosen_title, [])
+        job_info = None
+        benefits_with_details = [] # Initialize empty list
+
+        if chosen_job_index is not None:
+            job_info = Constants.JOB_TILES[chosen_job_index]
+            # Create a structured list of benefits with their descriptions for the template
+            for benefit_name in job_info.get('benefits', []):
+                benefits_with_details.append({
+                    'name': benefit_name,
+                    'description': job_info['benefit_details'].get(benefit_name, 'No description available.')
+                })
 
         return dict(
-            job_title=chosen_title,
-            base_wage=base_wage,
-            packages=packages_with_details,
+            job_info=job_info,
+            benefits_with_details=benefits_with_details # Pass the new list to the template
         )
 
 class ResultsSummary(Page):
@@ -269,23 +257,27 @@ class ResultsSummary(Page):
         return self.round_number == Constants.num_rounds
 
     def vars_for_template(self):
+        player_in_round_1 = self.in_round(1)
+        player_in_final_round = self.in_round(Constants.num_rounds)
+
         accepted_treatments = []
         for p in self.in_all_rounds():
             bonus_info = "N/A"
-            accepted_info = "No" # Default
+            accepted_info = "No"  # Default
 
             if p.treatment == 'Choice':
-                # For choice, we summarize the two decisions
                 gym = p.gym_choice or "No decision"
                 bike = p.bike_choice or "No decision"
                 bonus_info = f"Gym: {gym}, Bike: {bike}"
                 if p.gym_choice in ['Cash', 'Benefit'] or p.bike_choice in ['Cash', 'Benefit']:
-                     accepted_info = "Yes (at least one)"
-            else: # Covers 'Cash Bonus' and 'Non-Monetary Perk'
-                if p.treatment == 'Non-Monetary Perk':
-                    bonus_info = p.perk_offered or "N/A"
-                elif p.treatment == 'Cash Bonus':
-                    bonus_info = f"€{Constants.CASH_BONUS}"
+                    accepted_info = "Yes (at least one)"
+
+            elif p.treatment == 'Non-Monetary Perk':
+                bonus_info = p.perk_offered
+                if p.accept_offer:
+                    accepted_info = "Yes"
+            elif p.treatment == 'Cash Bonus':
+                bonus_info = f"€{Constants.CASH_BONUS}"
                 if p.accept_offer:
                     accepted_info = "Yes"
             
@@ -296,36 +288,29 @@ class ResultsSummary(Page):
                 'bonus_info': bonus_info,
             })
 
-        # --- Get final job and benefit selection ---
-        player_r1 = self.in_round(1)
-        player_final = self.in_round(Constants.num_rounds)
-        
-        preferred_title = player_r1.field_maybe_none('preferred_job_title')
-        package_index = player_final.field_maybe_none('chosen_benefit_package')
-        
-        chosen_package_info = None
-        if preferred_title and package_index is not None:
-            packages = Constants.BENEFIT_PACKAGES.get(preferred_title, [])
-            if 0 <= package_index < len(packages):
-                chosen_package_info = packages[package_index]
+        chosen_job_info = None
+        chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+        if chosen_job_index is not None:
+            chosen_job_info = Constants.JOB_TILES[chosen_job_index]
 
         return dict(
             accepted_treatments=accepted_treatments,
-            preferred_job_title=preferred_title,
-            preferred_salary=player_r1.field_maybe_none('preferred_salary'),
-            chosen_benefit_package=chosen_package_info,
-            modal_time_log=player_final.field_maybe_none('modal_time_log'),  
-            willingness_to_pay_gym=player_r1.field_maybe_none('willingness_to_pay_gym'),
-            willingness_to_pay_bike=player_r1.field_maybe_none('willingness_to_pay_bike'),
+            chosen_job_info=chosen_job_info,
+            preferred_salary=player_in_round_1.preferred_salary,
+            chosen_benefit_package=player_in_final_round.chosen_benefit_package,
+            modal_time_log=player_in_final_round.modal_time_log,
+            willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
+            willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,
         )
 
-
-# UPDATED page sequence
+# =============================================================================
+# 3. PAGE SEQUENCE
+# =============================================================================
 page_sequence = [
-    Introduction, 
-    ValuePerception, 
-    JobTitleSurvey, # New page inserted here
-    JobOffer, 
-    JobSelection, 
+    Introduction,
+    ValuePerception,
+    JobPreference,
+    JobOffer,
+    JobSelection,
     ResultsSummary
 ]

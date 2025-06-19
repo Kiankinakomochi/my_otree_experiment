@@ -1,111 +1,116 @@
 {% extends "global/Page.html" %}
 {% load otree %}
 
-{% block title %}
-    Select Your Benefit Package
-{% endblock %}
+{% block title %}Final Job Selection{% endblock %}
 
 {% block content %}
-
 <style>
-    .otree-content { max-width: 900px; margin: 30px auto; }
-    h2 { color: #0056b3; margin-bottom: 5px; font-size: 2em; text-align: center; }
-    p.instructions { text-align: center; margin-bottom: 30px; font-size: 1.2em; color: #333; }
-
-    /* Package Cards Grid */
-    .package-container {
-        display: grid;
-        grid-template-columns: 1fr; /* Each card takes a full row */
-        gap: 20px;
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
     }
-    .package-card {
-        background-color: #fdfdfd;
-        border: 1px solid #ddd;
-        padding: 25px;
+    .otree-content-main {
+        background-color: #fff;
+        padding: 30px;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease-in-out;
-        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 30px auto;
     }
-    .package-card:hover {
-        border-color: #007bff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-3px);
-    }
-
-    /* Card Content */
-    .package-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    .package-header input[type="radio"] {
-        transform: scale(1.3);
-    }
-    .package-header label {
-        font-size: 1.5em;
-        font-weight: bold;
+    h2, h3 {
         color: #0056b3;
     }
-    .package-details {
-        margin-top: 15px;
-        padding-left: 38px; /* Align with label */
+    strong {
+        color: #0056b3;
     }
-    .package-details p {
-        margin-bottom: 10px;
-        color: #555;
+    .instruction {
+        background-color: #e7f3ff;
+        border-left: 5px solid #007bff;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border-radius: 5px;
     }
-    .package-details .wage { font-weight: bold; color: #28a745; font-size: 1.1em; }
-    .package-details ul {
-        list-style-type: disc;
-        list-style-position: inside;
-        padding-left: 5px;
+    .otree-btn-next, button[type="submit"] {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
     }
-    .package-details li {
+    .otree-btn-next:hover, button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+    .job-details-block, .benefits-block {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 5px;
+        background-color: #fafafa;
+    }
+    .benefit-item {
+        margin-bottom: 15px;
+    }
+    .benefit-item label {
+        display: block;
+        font-weight: bold;
         margin-bottom: 5px;
     }
-
-    /* Submit button */
-    .next-btn-container { text-align: center; margin-top: 30px;}
+    .benefit-item p {
+        margin-top: 0;
+        margin-left: 25px; /* Indent description */
+        font-size: 0.9em;
+        color: #555;
+    }
+    /* Hidden input for modal timer */
+    input[name="modal_time_log"] {
+        display: none;
+    }
 </style>
 
-<div class="otree-content">
-    <h2>Benefit Package Selection</h2>
-    <p class="instructions">For the <strong>{{ job_title }}</strong> role, please choose one of the following benefit packages.</p>
+<div class="otree-content-main">
+    <h2>Final Job Selection</h2>
 
-    <form method="post">
-        <div class="package-container">
-            {% for choice in form.chosen_benefit_package %}
-            <div class="package-card" onclick="document.getElementById('{{ choice.id_for_label }}').click()">
-                <div class="package-header">
-                    {{ choice.tag }}
-                    <label for="{{ choice.id_for_label }}">{{ packages|get_item:choice.data.value|get_item:'name' }}</label>
-                </div>
-                {% with package=packages|get_item:choice.data.value %}
-                <div class="package-details">
-                    <p>{{ package.description }}</p>
-                    <p class="wage">
-                        Final Monthly Wage: €{{ base_wage|add:package.wage_adjustment }}
-                        <span style="font-size: 0.9em; color: #666;">
-                            (Base: €{{ base_wage }}, Adjustment: €{{ package.wage_adjustment }})
-                        </span>
-                    </p>
-                    <strong>Benefits include:</strong>
-                    <ul>
-                        {% for benefit in package.benefits %}
-                        <li>{{ benefit }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endwith %}
+    <div class="instruction">
+        <p>Based on the job title you preferred at the beginning of the study, you can now select a specific benefit package to finalize your job profile.</p>
+    </div>
+
+    {% if job_info %}
+        <div class="job-details-block">
+            <h3>Your Preferred Role: {{ job_info.title }}</h3>
+            <p><strong>Standard Monthly Wage:</strong> €{{ job_info.wage }}</p>
+            <p><strong>Description:</strong> {{ job_info.description }}</p>
+        </div>
+
+        <form method="post">
+            <div class="benefits-block">
+                <h3>Choose a Benefit Package</h3>
+                <p>Please select one of the following benefit packages available for the <strong>{{ job_info.title }}</strong> position.</p>
+                
+                <!-- THIS IS THE CORRECTED PART -->
+                {% for benefit in benefits_with_details %}
+                    <div class="benefit-item">
+                        <label>
+                            <input type="radio" name="chosen_benefit_package" value="{{ benefit.name }}" required>
+                            {{ benefit.name }}
+                        </label>
+                        <p>{{ benefit.description }}</p>
+                    </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-        
-        <div class="next-btn-container">
-            {% next_button %}
-        </div>
-    </form>
-</div>
 
+            <!-- Hidden field for modal timer, as defined in __init__.py -->
+            <input type="hidden" name="modal_time_log" id="modal_time_log_input">
+
+            <button type="submit" class="otree-btn-next">Finalize Selection</button>
+        </form>
+    {% else %}
+        <p class="text-danger">Error: Job information could not be loaded. Please contact the administrator.</p>
+    {% endif %}
+
+</div>
 {% endblock %}
