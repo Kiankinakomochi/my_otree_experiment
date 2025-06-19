@@ -238,11 +238,18 @@ class JobSelection(Page):
         # Each "package" will have the same title but different wage/benefit combos.
         job_packages = []
         for i, original_job in enumerate(Constants.JOB_TILES):
+            benefits_with_details = []
+            for benefit_name in original_job.get('benefits', []):
+                benefits_with_details.append({
+                    'name': benefit_name,
+                    'description': original_job['benefit_details'].get(benefit_name, 'No description available.')
+                })
+            
             job_packages.append({
-                'title': chosen_title,  # Use the title the participant chose
+                'title': chosen_title,
                 'wage': original_job['wage'],
-                'benefits': original_job['benefits'],
-                'index': i  # The index to identify which package was chosen
+                'benefits': benefits_with_details, # Pass the detailed list for the modal
+                'index': i
             })
             
         return dict(
