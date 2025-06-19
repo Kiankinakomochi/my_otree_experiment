@@ -124,9 +124,9 @@ class Player(BasePlayer):
         blank=True
     )
     
-    # --- Fields for JobSelection page (Final Round) ---
-    chosen_benefit_package = models.StringField(
-        label="From the list of benefits associated with your chosen job, please select one.",
+    # This field now stores the index of the chosen package from Constants.JOB_TILES
+    chosen_job_package_index = models.IntegerField(
+        label="Please choose your preferred job package.",
         blank=True
     )
     modal_time_log = models.StringField(blank=True)
@@ -207,9 +207,6 @@ class JobOffer(Page):
             elif perk == 'Work Bike':
                 adjusted_salary -= player_in_round_1.willingness_to_pay_bike
             bonus_desc = f"Non-monetary perk: {perk}"
-        elif treatment == 'Choice':
-            pass
-
         return dict(
             job_title=job_title,
             base_salary=adjusted_salary,
@@ -221,11 +218,9 @@ class JobOffer(Page):
         )
 
 class JobSelection(Page):
-    """
-    This page is now for selecting a benefit package for the chosen job title.
-    """
     form_model = 'player'
-    form_fields = ['chosen_benefit_package', 'modal_time_log']
+    # The form field is updated to match the new Player model field
+    form_fields = ['chosen_job_package_index', 'modal_time_log']
 
     def is_displayed(self):
         # Only display this page in the final round
@@ -235,21 +230,23 @@ class JobSelection(Page):
         player_in_round_1 = self.in_round(1)
         chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         
-        job_info = None
-        benefits_with_details = [] # Initialize empty list
-
+        chosen_title = "General Position"
         if chosen_job_index is not None:
-            job_info = Constants.JOB_TILES[chosen_job_index]
-            # Create a structured list of benefits with their descriptions for the template
-            for benefit_name in job_info.get('benefits', []):
-                benefits_with_details.append({
-                    'name': benefit_name,
-                    'description': job_info['benefit_details'].get(benefit_name, 'No description available.')
-                })
-
+            chosen_title = Constants.JOB_TILES[chosen_job_index]['title']
+        
+        # --- NEW LOGIC TO CREATE JOB PACKAGES ---
+        # Each "package" will have the same title but different wage/benefit combos.
+        job_packages = []
+        for i, original_job in enumerate(Constants.JOB_TILES):
+            job_packages.append({
+                'title': chosen_title,  # Use the title the participant chose
+                'wage': original_job['wage'],
+                'benefits': original_job['benefits'],
+                'index': i  # The index to identify which package was chosen
+            })
+            
         return dict(
-            job_info=job_info,
-            benefits_with_details=benefits_with_details # Pass the new list to the template
+            job_packages=job_packages,
         )
 
 class ResultsSummary(Page):

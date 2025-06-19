@@ -18,7 +18,7 @@
         max-width: 800px;
         margin: 30px auto;
     }
-    h2, h3 {
+    h2 {
         color: #0056b3;
     }
     strong {
@@ -45,72 +45,68 @@
     .otree-btn-next:hover, button[type="submit"]:hover {
         background-color: #0056b3;
     }
-    .job-details-block, .benefits-block {
+    .package-block {
         border: 1px solid #ddd;
         padding: 20px;
         margin-top: 20px;
         border-radius: 5px;
         background-color: #fafafa;
     }
-    .benefit-item {
+    .package-block h3 {
+        margin-top: 0;
+        color: #0056b3;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
         margin-bottom: 15px;
     }
-    .benefit-item label {
-        display: block;
-        font-weight: bold;
-        margin-bottom: 5px;
+    .package-details p {
+        margin: 5px 0 15px 0;
+        font-size: 1.1em;
     }
-    .benefit-item p {
-        margin-top: 0;
-        margin-left: 25px; /* Indent description */
-        font-size: 0.9em;
-        color: #555;
+    .package-details ul {
+        list-style-type: disc;
+        padding-left: 20px;
+        margin-bottom: 10px;
     }
-    /* Hidden input for modal timer */
     input[name="modal_time_log"] {
         display: none;
     }
 </style>
 
 <div class="otree-content-main">
-    <h2>Final Job Selection</h2>
+    <h2>Final Job Choice</h2>
 
     <div class="instruction">
-        <p>Based on the job title you preferred at the beginning of the study, you can now select a specific benefit package to finalize your job profile.</p>
+        <p>Now, please select your preferred overall job package. Each option below features the job title you previously selected, but with a different combination of salary and benefits. Please review each package and choose the one you find most attractive.</p>
     </div>
 
-    {% if job_info %}
-        <div class="job-details-block">
-            <h3>Your Preferred Role: {{ job_info.title }}</h3>
-            <p><strong>Standard Monthly Wage:</strong> €{{ job_info.wage }}</p>
-            <p><strong>Description:</strong> {{ job_info.description }}</p>
-        </div>
-
-        <form method="post">
-            <div class="benefits-block">
-                <h3>Choose a Benefit Package</h3>
-                <p>Please select one of the following benefit packages available for the <strong>{{ job_info.title }}</strong> position.</p>
-                
-                <!-- THIS IS THE CORRECTED PART -->
-                {% for benefit in benefits_with_details %}
-                    <div class="benefit-item">
-                        <label>
-                            <input type="radio" name="chosen_benefit_package" value="{{ benefit.name }}" required>
-                            {{ benefit.name }}
-                        </label>
-                        <p>{{ benefit.description }}</p>
-                    </div>
-                {% endfor %}
+    <form method="post">
+        
+        {% for package in job_packages %}
+            <div class="package-block">
+                <label>
+                    <h3>
+                        <input type="radio" name="chosen_job_package_index" value="{{ package.index }}" required>
+                        {{ package.title }}
+                    </h3>
+                </label>
+                <div class="package-details">
+                    <p><strong>Monthly Wage:</strong> €{{ package.wage }}</p>
+                    <p><strong>Benefits Included:</strong></p>
+                    <ul>
+                        {% for benefit in package.benefits %}
+                            <li>{{ benefit }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
+        {% endfor %}
 
-            <!-- Hidden field for modal timer, as defined in __init__.py -->
-            <input type="hidden" name="modal_time_log" id="modal_time_log_input">
+        <!-- Hidden field for modal timer, as defined in __init__.py -->
+        <input type="hidden" name="modal_time_log" id="modal_time_log_input">
 
-            <button type="submit" class="otree-btn-next">Finalize Selection</button>
-        </form>
-    {% else %}
-        <p class="text-danger">Error: Job information could not be loaded. Please contact the administrator.</p>
-    {% endif %}
+        <button type="submit" class="otree-btn-next">Submit Final Choice</button>
+    </form>
 
 </div>
 {% endblock %}
