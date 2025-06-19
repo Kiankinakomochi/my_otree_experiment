@@ -285,17 +285,22 @@ class ResultsSummary(Page):
                 'bonus_info': bonus_info,
             })
 
-        chosen_job_info = None
-        chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
-        if chosen_job_index is not None:
-            chosen_job_info = Constants.JOB_TILES[chosen_job_index]
+        # --- CORRECTED LOGIC TO DISPLAY THE CHOSEN PACKAGE ---
+        chosen_package_details = None
+        package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
+        if package_index is not None:
+            chosen_package_details = Constants.JOB_TILES[package_index]
+        
+        preferred_job_title = "Not chosen"
+        preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+        if preferred_job_index is not None:
+            preferred_job_title = Constants.JOB_TILES[preferred_job_index]['title']
 
         return dict(
             accepted_treatments=accepted_treatments,
-            chosen_job_info=chosen_job_info,
+            preferred_job_title=preferred_job_title,
+            chosen_package_details=chosen_package_details, # Pass full package to template
             preferred_salary=player_in_round_1.preferred_salary,
-            chosen_benefit_package=player_in_final_round.chosen_benefit_package,
-            modal_time_log=player_in_final_round.modal_time_log,
             willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
             willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,
         )
