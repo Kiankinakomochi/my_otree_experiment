@@ -74,39 +74,117 @@
 </style>
 
 <div class="otree-content-main">
-    <h2>Final Job Choice</h2>
+    <form method="post" id="job-selection-form">
+        <!-- Hidden inputs to store the final choice and timing data -->
+        <input type="hidden" name="chosen_job_package_index" id="chosen_job_package_index">
+        <input type="hidden" name="modal_time_log" id="modal_time_log">
 
-    <div class="instruction">
-        <p>Now, please select your preferred overall job package. Each option below features the job title you previously selected, but with a different combination of salary and benefits. Please review each package and choose the one you find most attractive.</p>
-    </div>
+        <h2>Final Job Choice</h2>
+        <div class="instruction">
+            <p>Please select your preferred overall job package. Click on a package to see more details and confirm your choice.</p>
+        </div>
 
-    <form method="post">
-        
-        {% for package in job_packages %}
-            <div class="package-block">
-                <label>
-                    <h3>
-                        <input type="radio" name="chosen_job_package_index" value="{{ package.index }}" required>
-                        {{ package.title }}
-                    </h3>
-                </label>
-                <div class="package-details">
+        <div class="package-container">
+            {% for package in job_packages %}
+                <div class="package-block" data-index="{{ package.index }}" data-title="{{ package.title }}" data-wage="{{ package.wage }}">
+                    <h4>{{ package.title }}</h4>
                     <p><strong>Monthly Wage:</strong> €{{ package.wage }}</p>
-                    <p><strong>Benefits Included:</strong></p>
+                    <p><strong>Benefits:</strong></p>
                     <ul>
                         {% for benefit in package.benefits %}
-                            <li>{{ benefit }}</li>
+                            <li>{{ benefit.name }}</li>
+                            <!-- We store the description in a hidden span to be read by JS -->
+                            <span class="benefit-description" style="display:none;">{{ benefit.description }}</span>
                         {% endfor %}
                     </ul>
                 </div>
-            </div>
-        {% endfor %}
-
-        <!-- Hidden field for modal timer, as defined in __init__.py -->
-        <input type="hidden" name="modal_time_log" id="modal_time_log_input">
-
-        <button type="submit" class="otree-btn-next">Submit Final Choice</button>
+            {% endfor %}
+        </div>
     </form>
-
 </div>
+
+<!-- The Modal -->
+<div id="confirmation-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">Confirm Your Choice</h3>
+        </div>
+        <div class="modal-body">
+            <p>You have selected the following job package:</p>
+            <p><strong>Monthly Wage:</strong> <span id="modal-wage"></span></p>
+            <p><strong>Benefit Details:</strong></p>
+            <ul id="modal-benefits-list">
+                <!-- Benefit details will be populated by JavaScript -->
+            </ul>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="back-button" class="modal-btn back-btn">Back to Selection</button>
+            <button type="button" id="confirm-button" class="modal-btn confirm-btn">Confirm Choice</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('job-selection-form');
+    const modal = document.getElementById('confirmation-modal');
+    const backButton = document.getElementById('back-button');
+    const confirmButton = document.getElementById('confirm-button');
+    const packageBlocks = document.querySelectorAll('.package-block');
+    
+    // Hidden form fields
+    const choiceInput = document.getElementById('chosen_job_package_index');
+    const timeLogInput = document.getElementById('modal_time_log');
+
+    let modalOpenTime;
+
+    packageBlocks.forEach(block => {
+        block.addEventListener('click', function () {
+            // Get data from the clicked block
+            const index = this.dataset.index;
+            const title = this.dataset.title;
+            const wage = this.dataset.wage;
+            
+            // Populate modal
+            document.getElementById('modal-title').innerText = `Confirm: ${title}`;
+            document.getElementById('modal-wage').innerText = `€${wage}`;
+            const benefitsList = document.getElementById('modal-benefits-list');
+            benefitsList.innerHTML = ''; // Clear previous benefits
+
+            const benefitNames = this.querySelectorAll('li');
+            const benefitDescriptions = this.querySelectorAll('.benefit-description');
+
+            benefitNames.forEach((nameEl, i) => {
+                const name = nameEl.innerText;
+                const description = benefitDescriptions[i].innerText;
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="benefit-name">${name}:</span> ${description}`;
+                benefitsList.appendChild(li);
+            });
+
+            // Set the hidden input value for the choice
+            choiceInput.value = index;
+            
+            // Show modal and start timer
+            modal.style.display = 'flex';
+            modalOpenTime = new Date();
+        });
+    });
+
+    // Close the modal
+    backButton.addEventListener('click', function () {
+        modal.style.display = 'none';
+        modalOpenTime = null; // Reset timer
+    });
+
+    // Confirm and submit the form
+    confirmButton.addEventListener('click', function () {
+        if (modalOpenTime) {
+            const timeElapsed = new Date() - modalOpenTime;
+            timeLogInput.value = `${timeElapsed}ms`;
+        }
+        form.submit();
+    });
+});
+</script>
 {% endblock %}
