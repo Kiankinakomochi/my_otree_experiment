@@ -1,190 +1,185 @@
 {% extends "global/Page.html" %}
 {% load otree %}
 
-{% block title %}Final Job Selection{% endblock %}
-
 {% block content %}
+
 <style>
-    body {
-        font-family: 'Arial', sans-serif;
-        background-color: #f4f4f4;
-        color: #333;
+    /* General Page Styles */
+    .otree-content { max-width: 900px; margin: 30px auto; }
+    h2 { color: #0056b3; margin-bottom: 20px; font-size: 2em; text-align: center; }
+    p.instructions { text-align: center; margin-bottom: 25px; }
+
+    /* Job Packages Grid */
+    .job-packages-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
     }
-    .otree-content-main {
-        background-color: #fff;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        max-width: 800px;
-        margin: 30px auto;
-    }
-    h2 {
-        color: #0056b3;
-    }
-    strong {
-        color: #0056b3;
-    }
-    .instruction {
-        background-color: #e7f3ff;
-        border-left: 5px solid #007bff;
-        padding: 15px 20px;
-        margin-bottom: 20px;
-        border-radius: 5px;
-    }
-    .otree-btn-next, button[type="submit"] {
-        background-color: #007bff;
-        color: white;
-        padding: 12px 25px;
-        border: none;
-        border-radius: 5px;
-        font-size: 1.1em;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 20px;
-    }
-    .otree-btn-next:hover, button[type="submit"]:hover {
-        background-color: #0056b3;
-    }
-    .package-block {
+    .package-tile {
+        background-color: #fdfdfd;
         border: 1px solid #ddd;
         padding: 20px;
-        margin-top: 20px;
-        border-radius: 5px;
-        background-color: #fafafa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
     }
-    .package-block h3 {
-        margin-top: 0;
-        color: #0056b3;
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
+    .package-tile:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
     }
-    .package-details p {
-        margin: 5px 0 15px 0;
-        font-size: 1.1em;
+    .package-tile strong { font-size: 1.3em; color: #0056b3; }
+    .package-tile .wage { font-weight: bold; color: #28a745; margin-top: 10px; }
+    .package-tile .benefits { color: #555; margin-top: 5px; }
+
+    /* Modal Styles */
+    .modal {
+        display: none; position: fixed; z-index: 1000;
+        left: 0; top: 0; width: 100%; height: 100%;
+        overflow: auto; background-color: rgba(0,0,0,0.6);
     }
-    .package-details ul {
-        list-style-type: disc;
-        padding-left: 20px;
-        margin-bottom: 10px;
+    .modal-content {
+        background-color: #fefefe; margin: 5% auto; padding: 30px 40px;
+        border: 1px solid #888; width: 80%; max-width: 700px;
+        border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        text-align: left;
     }
-    input[name="modal_time_log"] {
-        display: none;
+    .modal-content h3 { font-size: 2em; color: #0056b3; margin-bottom: 15px; }
+    .modal-content .salary-text { color: #28a745; font-weight: bold; }
+    .modal-content ul { list-style-position: inside; padding-left: 10px; }
+    .modal-content li { margin-bottom: 10px; }
+
+    /* Button Styles */
+    .button-group { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; }
+    .btn {
+        padding: 12px 25px; border: none; border-radius: 5px;
+        font-size: 1.1em; cursor: pointer; transition: background-color 0.3s ease;
     }
+    .btn-primary { background-color: #007bff; color: white; }
+    .btn-primary:hover { background-color: #0056b3; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-secondary:hover { background-color: #5a6268; }
 </style>
 
-<div class="otree-content-main">
+<div class="otree-content">
+    <h2>Select Your Preferred Job Package</h2>
+    <p class="instructions">All of the packages below are for the job title you preferred earlier. Click on a package to see a detailed description and confirm your choice.</p>
+
     <form method="post" id="job-selection-form">
-        <!-- Hidden inputs to store the final choice and timing data -->
-        <input type="hidden" name="chosen_job_package_index" id="chosen_job_package_index">
-        <input type="hidden" name="modal_time_log" id="modal_time_log">
+        <input type="hidden" name="chosen_job_package_index" id="chosen_job_package_index_input">
+        <input type="hidden" name="modal_time_log" id="modal_time_log_input">
 
-        <h2>Final Job Choice</h2>
-        <div class="instruction">
-            <p>Please select your preferred overall job package. Click on a package to see more details and confirm your choice.</p>
-        </div>
-
-        <div class="package-container">
-            {% for package in job_packages %}
-                <div class="package-block" data-index="{{ package.index }}" data-title="{{ package.title }}" data-wage="{{ package.wage }}">
-                    <h4>{{ package.title }}</h4>
-                    <p><strong>Monthly Wage:</strong> €{{ package.wage }}</p>
-                    <p><strong>Benefits:</strong></p>
-                    <ul>
-                        {% for benefit in package.benefits %}
-                            <li>{{ benefit.name }}</li>
-                            <!-- We store the description in a hidden span to be read by JS -->
-                            <span class="benefit-description" style="display:none;">{{ benefit.description }}</span>
-                        {% endfor %}
-                    </ul>
-                </div>
+        <div class="job-packages-container">
+            {% for package in job_packages_for_display %}
+            <div class="package-tile" data-index="{{ package.index }}">
+                <strong>{{ package.title }}</strong>
+                <div class="wage">Wage: €{{ package.wage }}</div>
+                <div class="benefits">Benefits: {{ package.benefits_summary }}</div>
+            </div>
             {% endfor %}
         </div>
+        
+        <div id="job-modal" class="modal">
+            <div class="modal-content">
+                <h3 id="modal-title"></h3>
+                <p id="modal-description"></p>
+                <hr>
+                <p><strong>Salary:</strong> <span id="modal-wage" class="salary-text"></span> / month</p>
+                <div>
+                    <strong>Benefits:</strong>
+                    <ul id="modal-benefits"></ul>
+                </div>
+                <div class="button-group">
+                    <button type="button" id="modal-back-btn" class="btn btn-secondary">Back to Selection</button>
+                    <button type="submit" id="modal-confirm-btn" class="btn btn-primary">Confirm Choice</button>
+                </div>
+            </div>
+        </div>
+
     </form>
 </div>
 
-<!-- The Modal -->
-<div id="confirmation-modal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modal-title">Confirm Your Choice</h3>
-        </div>
-        <div class="modal-body">
-            <p>You have selected the following job package:</p>
-            <p><strong>Monthly Wage:</strong> <span id="modal-wage"></span></p>
-            <p><strong>Benefit Details:</strong></p>
-            <ul id="modal-benefits-list">
-                <!-- Benefit details will be populated by JavaScript -->
-            </ul>
-        </div>
-        <div class="modal-footer">
-            <button type="button" id="back-button" class="modal-btn back-btn">Back to Selection</button>
-            <button type="button" id="confirm-button" class="modal-btn confirm-btn">Confirm Choice</button>
-        </div>
-    </div>
-</div>
-
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
+    // This uses the raw data from Python for the modal's detailed content
+    const jobScriptData = {{ job_tiles_for_script|json }};
+    const modal = document.getElementById('job-modal');
     const form = document.getElementById('job-selection-form');
-    const modal = document.getElementById('confirmation-modal');
-    const backButton = document.getElementById('back-button');
-    const confirmButton = document.getElementById('confirm-button');
-    const packageBlocks = document.querySelectorAll('.package-block');
-    
-    // Hidden form fields
-    const choiceInput = document.getElementById('chosen_job_package_index');
-    const timeLogInput = document.getElementById('modal_time_log');
+    const chosenPackageInput = document.getElementById('chosen_job_package_index_input');
+    const timeLogInput = document.getElementById('modal_time_log_input');
+    const backBtn = document.getElementById('modal-back-btn');
+    const confirmBtn = document.getElementById('modal-confirm-btn'); 
 
+    let timeLog = {};
     let modalOpenTime;
+    let currentlyOpenJobTitle; // Using the original title for the log key
 
-    packageBlocks.forEach(block => {
-        block.addEventListener('click', function () {
-            // Get data from the clicked block
-            const index = this.dataset.index;
-            const title = this.dataset.title;
-            const wage = this.dataset.wage;
-            
-            // Populate modal
-            document.getElementById('modal-title').innerText = `Confirm: ${title}`;
-            document.getElementById('modal-wage').innerText = `€${wage}`;
-            const benefitsList = document.getElementById('modal-benefits-list');
-            benefitsList.innerHTML = ''; // Clear previous benefits
+    function openModal(packageIndex) {
+        // Use the raw script data to get all details
+        const jobData = jobScriptData[packageIndex];
+        currentlyOpenJobTitle = jobData.title; // Log the original title
 
-            const benefitNames = this.querySelectorAll('li');
-            const benefitDescriptions = this.querySelectorAll('.benefit-description');
+        chosenPackageInput.value = packageIndex;
 
-            benefitNames.forEach((nameEl, i) => {
-                const name = nameEl.innerText;
-                const description = benefitDescriptions[i].innerText;
-                const li = document.createElement('li');
-                li.innerHTML = `<span class="benefit-name">${name}:</span> ${description}`;
-                benefitsList.appendChild(li);
-            });
+        // Populate modal with details from the script data
+        document.getElementById('modal-title').textContent = jobData.title;
+        document.getElementById('modal-description').textContent = jobData.description;
+        document.getElementById('modal-wage').textContent = `€${jobData.wage}`;
+        const benefitsList = document.getElementById('modal-benefits');
+        benefitsList.innerHTML = '';
+        jobData.benefits.forEach(benefitName => {
+            const li = document.createElement('li');
+            const benefitDescription = jobData.benefit_details[benefitName] || 'Details not available.';
+            li.innerHTML = `<strong>${benefitName}:</strong> ${benefitDescription}`;
+            benefitsList.appendChild(li);
+        });
+        
+        modalOpenTime = new Date().getTime();
+        modal.style.display = 'block';
+    }
 
-            // Set the hidden input value for the choice
-            choiceInput.value = index;
-            
-            // Show modal and start timer
-            modal.style.display = 'flex';
-            modalOpenTime = new Date();
+    function closeModalAndLogTime() {
+        if (!modalOpenTime) return;
+        const timeElapsed = new Date().getTime() - modalOpenTime;
+        if (timeLog[currentlyOpenJobTitle]) {
+            timeLog[currentlyOpenJobTitle] += timeElapsed;
+        } else {
+            timeLog[currentlyOpenJobTitle] = timeElapsed;
+        }
+        modal.style.display = 'none';
+        modalOpenTime = null;
+        currentlyOpenJobTitle = null;
+    }
+
+    document.querySelectorAll('.package-tile').forEach(tile => {
+        tile.addEventListener('click', function() {
+            openModal(this.dataset.index);
         });
     });
 
-    // Close the modal
-    backButton.addEventListener('click', function () {
-        modal.style.display = 'none';
-        modalOpenTime = null; // Reset timer
+    backBtn.addEventListener('click', function() {
+        closeModalAndLogTime();
+        chosenPackageInput.value = '';
     });
 
-    // Confirm and submit the form
-    confirmButton.addEventListener('click', function () {
-        if (modalOpenTime) {
-            const timeElapsed = new Date() - modalOpenTime;
-            timeLogInput.value = `${timeElapsed}ms`;
+    window.addEventListener('click', function(event) {
+        if (event.target == modal) {
+            closeModalAndLogTime();
+            chosenPackageInput.value = '';
         }
-        form.submit();
+    });
+    confirmBtn.addEventListener('click', function() {
+    if (chosenPackageInput.value === '') {
+        alert('Please make a selection first by clicking a package and pressing "Confirm Choice".');
+        return;
+    }
+    closeModalAndLogTime();
+    timeLogInput.value = JSON.stringify(timeLog);
+    form.submit();
     });
 });
 </script>
+
 {% endblock %}

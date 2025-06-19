@@ -1,6 +1,7 @@
 import logging
 from otree.api import *
 import random
+import json
 
 # =============================================================================
 # 1. MODELS
@@ -228,32 +229,28 @@ class JobSelection(Page):
 
     def vars_for_template(self):
         player_in_round_1 = self.in_round(1)
-        chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+        # Get the index of the job title chosen on the JobPreference page
+        preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         
         chosen_title = "General Position"
-        if chosen_job_index is not None:
-            chosen_title = Constants.JOB_TILES[chosen_job_index]['title']
+        if preferred_job_index is not None:
+            chosen_title = Constants.JOB_TILES[preferred_job_index]['title']
         
-        # --- NEW LOGIC TO CREATE JOB PACKAGES ---
-        # Each "package" will have the same title but different wage/benefit combos.
-        job_packages = []
+        # 1. Create packages for display with the consistent title
+        job_packages_for_display = []
         for i, original_job in enumerate(Constants.JOB_TILES):
-            benefits_with_details = []
-            for benefit_name in original_job.get('benefits', []):
-                benefits_with_details.append({
-                    'name': benefit_name,
-                    'description': original_job['benefit_details'].get(benefit_name, 'No description available.')
-                })
-            
-            job_packages.append({
-                'title': chosen_title,
+            job_packages_for_display.append({
+                'title': chosen_title,  # Use the title the participant chose
                 'wage': original_job['wage'],
-                'benefits': benefits_with_details, # Pass the detailed list for the modal
+                'benefits_summary': [b for b in original_job.get('benefits', [])],
                 'index': i
             })
             
         return dict(
-            job_packages=job_packages,
+            # Data for displaying the tiles
+            job_packages_for_display=job_packages_for_display,
+            # Complete, raw data for the JavaScript modal
+            job_tiles_for_script=Constants.JOB_TILES,
         )
 
 class ResultsSummary(Page):
@@ -292,21 +289,32 @@ class ResultsSummary(Page):
                 'bonus_info': bonus_info,
             })
 
-        # --- CORRECTED LOGIC TO DISPLAY THE CHOSEN PACKAGE ---
-        chosen_package_details = None
+        # Get final choice details using the chosen_job_package_index
+        chosen_package_info = None
         package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
         if package_index is not None:
-            chosen_package_details = Constants.JOB_TILES[package_index]
+            chosen_package_info = Constants.JOB_TILES[package_index]
         
-        preferred_job_title = "Not chosen"
+        # Get initially preferred job title for display
+        preferred_title = "Not chosen"
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         if preferred_job_index is not None:
-            preferred_job_title = Constants.JOB_TILES[preferred_job_index]['title']
+            preferred_title = Constants.JOB_TILES[preferred_job_index]['title']
+
+        # Parse the JSON time log string for display
+        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
+        parsed_time_log = None
+        if time_log_data:
+            try:
+                parsed_time_log = json.loads(time_log_data)
+            except json.JSONDecodeError:
+                parsed_time_log = {'Error': 'Could not parse time log data.'}
 
         return dict(
             accepted_treatments=accepted_treatments,
-            preferred_job_title=preferred_job_title,
-            chosen_package_details=chosen_package_details, # Pass full package to template
+            chosen_package_info=chosen_package_info,
+            preferred_title=preferred_title,
+            parsed_time_log=parsed_time_log,
             preferred_salary=player_in_round_1.preferred_salary,
             willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
             willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,
