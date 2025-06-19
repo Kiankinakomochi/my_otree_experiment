@@ -1,0 +1,118 @@
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block title %}Job and Salary Preferences{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+    }
+    .otree-content-main {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 30px auto;
+    }
+    h2, h3 {
+        color: #0056b3;
+    }
+    strong {
+        color: #0056b3;
+    }
+    .instruction {
+        background-color: #e7f3ff;
+        border-left: 5px solid #007bff;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    .otree-btn-next, button[type="submit"] {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+    }
+    .otree-btn-next:hover, button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+    .preference-block {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 5px;
+        background-color: #fafafa;
+    }
+    .job-item {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    .job-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .job-item label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+    }
+    .job-item p {
+        margin-top: 0;
+        margin-left: 25px; /* Indent description */
+        font-size: 0.9em;
+        color: #555;
+    }
+    .job-item .wage {
+        margin-left: 25px;
+        font-style: italic;
+        color: #333;
+    }
+    .otree-form-group label {
+        font-weight: bold;
+    }
+</style>
+
+<div class="otree-content-main">
+    <h2>Job and Salary Preferences</h2>
+
+    <div class="instruction">
+        <p>Please review the job descriptions below. First, select the job title you find most appealing. Then, indicate your preferred monthly salary for that role.</p>
+    </div>
+
+    <form method="post">
+        <div class="preference-block">
+            <h3>Step 1: Choose Your Preferred Job</h3>
+            <p>Select one of the following job titles.</p>
+            {% for job in job_tiles %}
+                <div class="job-item">
+                    <label>
+                        <input type="radio" name="chosen_job_tile" value="{{ forloop.counter0 }}" required>
+                        {{ job.title }}
+                    </label>
+                    <p>{{ job.description }}</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="preference-block">
+            <h3>Step 2: State Your Preferred Salary</h3>
+            {% formfield player.preferred_salary label="What is your preferred monthly salary for this position?" %}
+        </div>
+
+        <button type="submit" class="otree-btn-next">Submit Preferences</button>
+    </form>
+
+</div>
+{% endblock %}
