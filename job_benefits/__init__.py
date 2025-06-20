@@ -18,6 +18,33 @@ class Constants(BaseConstants):
     CASH_BONUS = 500
     NON_MONETARY_PERKS = ['Gym Membership', 'Work Bike']
 
+    # --- NEW ---
+    # This list defines the benefits that will be presented to the user for ranking.
+    # It's crucial that the text here exactly matches what you might use elsewhere if you're cross-referencing.
+    BENEFITS_TO_RANK = [
+        'Public Transport Ticket',
+        'Company E-Bike',
+        'Premium Gym Membership',
+        'Extra Vacation Days',
+        'Professional Development Budget',
+        'Catered Lunch Program',
+        'Home Office Setup',
+        'Flexible Wellness Program',
+    ]
+    
+    # This dictionary provides descriptions for the benefits to be ranked.
+    BENEFIT_DESCRIPTIONS = {
+        'Public Transport Ticket': 'A monthly pass for all local public transportation.',
+        'Company E-Bike': 'Get a modern, high-quality e-bike for both your daily commute and personal use. This worry-free package includes all maintenance and insurance.',
+        'Premium Gym Membership': 'Full access to a premium gym facility with classes and personal training options.',
+        'Extra Vacation Days': 'Two additional days of paid leave beyond the standard allowance.',
+        'Professional Development Budget': 'An annual budget of €1,000 to be spent on approved training courses, conferences, or books.',
+        'Catered Lunch Program': 'Enjoy complimentary meals from a selection of local restaurants and delivery services several days a week.',
+        'Home Office Setup': 'The company will provide you with a high-quality ergonomic chair, a large external monitor, and other accessories for a comfortable and productive home office.',
+        'Flexible Wellness Program': 'Choose from a wide range of company-sponsored wellness activities that fit your lifestyle, such as yoga classes, meditation app subscriptions, or sports club fees.',
+    }
+
+
     JOB_TILES = [
         dict(
             title='Analyst',
@@ -26,7 +53,7 @@ class Constants(BaseConstants):
             description='As an Analyst, you will be responsible for collecting, interpreting, and presenting data to help the organization make informed decisions. This role requires strong analytical skills and attention to detail.',
             benefit_details={
                 'Gym Membership': 'Access to a premium gym facility with classes and personal training options.',
-                'Flexible hours': 'The ability to adjust your work schedule to better fit your personal needs and commitments.'
+                'Home Office Setup': 'The company will provide you with a high-quality ergonomic chair, and other accessories and devices (e.g. monitors) for a comfortable and productive home office.'
             }
         ),
         dict(
@@ -55,8 +82,8 @@ class Constants(BaseConstants):
             benefits=['Childcare support', 'Health program'],
             description='As a Manager, you will lead a team, oversee projects, and make key strategic decisions to achieve organizational goals. This role demands strong leadership, communication, and organizational skills.',
             benefit_details={
-                'Childcare support': 'Financial assistance or access to childcare facilities to support working parents.',
-                'Health program': 'Comprehensive wellness programs, including health screenings, fitness challenges, and mental health resources.'
+                'Catered Lunch Program': 'Enjoy complimentary meals from a selection of local restaurants and delivery services several days a week.',
+                'Health program': 'Choose from a wide range of company-sponsored wellness activities that fit your lifestyle, such as yoga classes, meditation app subscriptions'
             }
         ),
     ]
@@ -110,7 +137,10 @@ class Player(BasePlayer):
         min=0
     )
 
-    # --- Fields for JobOffer page (All Rounds) ---
+    # --- NEW ---
+    # Field to store the benefit ranking. It will be a comma-separated string from the JS widget.
+    benefit_ranking = models.LongStringField(blank=True)
+
     treatment = models.StringField()
     accept_offer = models.BooleanField(label="Do you accept this job offer?", blank=True)
     perk_offered = models.StringField(blank=True)
@@ -165,6 +195,27 @@ class JobPreference(Page):
         return dict(
             job_tiles=Constants.JOB_TILES
         )
+
+# --- NEW PAGE ---
+class BenefitRanking(Page):
+    """
+    On this page, participants rank a list of non-monetary benefits.
+    The page uses a JavaScript widget (e.g., SortableJS) to allow drag-and-drop ranking.
+    The order is saved into the hidden 'benefit_ranking' form field.
+    """
+    form_model = 'player'
+    form_fields = ['benefit_ranking']
+
+    def is_displayed(self):
+        return self.round_number == 1
+
+    def vars_for_template(self):
+        # Pass the list of benefits and their descriptions to the template
+        return {
+            'benefits_to_rank': Constants.BENEFITS_TO_RANK,
+            'benefit_descriptions': Constants.BENEFIT_DESCRIPTIONS,
+        }
+
 
 class JobOffer(Page):
     form_model = 'player'
@@ -229,35 +280,88 @@ class JobSelection(Page):
 
     def vars_for_template(self):
         player_in_round_1 = self.in_round(1)
-        player_in_final_round = self.in_round(Constants.num_rounds)
 
-        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
-        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
-        # Get the index of the job title chosen on the JobPreference page
+        # --- DYNAMIC TILE GENERATION LOGIC ---
+        
+        # 1. Get the participant's ranking and preferred salary from round 1
+        ranked_benefits_str = player_in_round_1.field_maybe_none('benefit_ranking')
+        preferred_salary = player_in_round_1.field_maybe_none('preferred_salary') or Constants.BASE_SALARY
+        
+        # Use WTP as the "Numéraire" for salary sacrifice
+        wtp_sum = (player_in_round_1.field_maybe_none('willingness_to_pay_gym') or 0) + \
+                  (player_in_round_1.field_maybe_none('willingness_to_pay_bike') or 0)
+
+        # Get the preferred job title
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
-
-        
-        
         chosen_title = "General Position"
         if preferred_job_index is not None:
             chosen_title = Constants.JOB_TILES[preferred_job_index]['title']
         
         # 1. Create packages for display with the consistent title
         job_packages_for_display = []
-        for i, original_job in enumerate(Constants.JOB_TILES):
-            job_packages_for_display.append({
-                'title': chosen_title,  # Use the title the participant chose
-                'wage': original_job['wage'],
-                'benefits_summary': [b for b in original_job.get('benefits', [])],
-                'index': i
-            })
+        
+        # Fallback in case ranking data is missing
+        if not ranked_benefits_str:
+             # If no ranking, show some default tiles (or handle as an error)
+             # Here, we revert to the old logic as a safe fallback.
+            for i, original_job in enumerate(Constants.JOB_TILES):
+                job_packages_for_display.append({
+                    'title': chosen_title,
+                    'wage': original_job['wage'],
+                    'benefits_summary': [b for b in original_job.get('benefits', [])],
+                    'index': i
+                })
+        else:
+            # 2. Create the personalized tiers
+            ranked_benefits = ranked_benefits_str.split(',')
             
+            # Define salary tiers
+            tier1_salary = preferred_salary
+            # Prevent salary from going below zero if WTP is very high
+            tier4_salary = max(0, preferred_salary - wtp_sum)
+            salary_step = (tier1_salary - tier4_salary) / 3
+            
+            salaries = [
+                round(tier1_salary),
+                round(tier1_salary - salary_step),
+                round(tier1_salary - 2 * salary_step),
+                round(tier4_salary)
+            ]
+            
+            # Define benefit tiers from the player's ranking
+            # Tiers are: Top rank, second rank, third from bottom, second from bottom
+            # This creates a more interesting choice than just 1,2,7,8
+            num_ranked = len(ranked_benefits)
+            benefit_tiers = [
+                ranked_benefits[0],                   # Tier 1 Benefit (Rank #1)
+                ranked_benefits[1],                   # Tier 2 Benefit (Rank #2)
+                ranked_benefits[num_ranked - 3],    # Tier 3 Benefit (e.g., Rank #6 out of 8)
+                ranked_benefits[num_ranked - 2],    # Tier 4 Benefit (e.g., Rank #7 out of 8)
+            ]
+            
+            # 3. Build the 4 personalized job tiles
+            # Tile 1: Tier 1 Salary, Tier 4 Benefit
+            # Tile 2: Tier 2 Salary, Tier 3 Benefit
+            # etc.
+            for i in range(4):
+                job_packages_for_display.append({
+                    'title': chosen_title,
+                    'wage': salaries[i],
+                    'benefits_summary': [benefit_tiers[3-i]], # Inversely matched
+                    'index': i,
+                    'benefit_details': {
+                        benefit_tiers[3-i]: Constants.BENEFIT_DESCRIPTIONS.get(benefit_tiers[3-i], '')
+                    }
+                })
+
+        # The full data needs to be passed to the script for the modal pop-up
+        job_tiles_for_script = job_packages_for_display
+        
         return dict(
             # Data for displaying the tiles
             job_packages_for_display=job_packages_for_display,
             modal_time_log = self.field_maybe_none('modal_time_log'),
-            # Complete, raw data for the JavaScript modal
-            job_tiles_for_script=Constants.JOB_TILES,
+            job_tiles_for_script=job_tiles_for_script,
         )
 
 class ResultsSummary(Page):
@@ -295,13 +399,18 @@ class ResultsSummary(Page):
                 'accepted': accepted_info,
                 'bonus_info': bonus_info,
             })
-
-        # 3. Use the local variables that safely stored your data.
-        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
-        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
+            
+        # --- MODIFIED ---: Re-generating the chosen package info based on dynamic tiles
         chosen_package_info = None
+        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
         if final_package_index is not None:
-            chosen_package_info = Constants.JOB_TILES[final_package_index]
+             # Since tiles are dynamic, we reconstruct the chosen tile's data for display
+             # This is a simplified reconstruction. For full data, one would need to rerun the generation logic.
+            job_packages_for_display = self.vars_for_template()['job_packages_for_display']
+            if final_package_index < len(job_packages_for_display):
+                chosen_package_info = job_packages_for_display[final_package_index]
+
+        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
         
         preferred_title = "Not chosen"
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
@@ -325,6 +434,7 @@ class ResultsSummary(Page):
             preferred_salary=player_in_round_1.preferred_salary,
             willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
             willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,
+            benefit_ranking=player_in_round_1.field_maybe_none('benefit_ranking'), # Show ranking on results
         )
 
 # =============================================================================
@@ -334,6 +444,7 @@ page_sequence = [
     Introduction,
     ValuePerception,
     JobPreference,
+    BenefitRanking, # New page added to the sequence
     JobOffer,
     JobSelection,
     ResultsSummary

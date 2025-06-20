@@ -1,0 +1,130 @@
+{% extends "global/Page.html" %}
+{% load otree %}
+
+{% block title %}
+    Benefit Ranking
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<style>
+    /* General Page Styles (Inherited from JobSelection for consistency) */
+    .otree-content { max-width: 900px; margin: 30px auto; }
+    h2 { color: #0056b3; margin-bottom: 20px; font-size: 2em; text-align: center; }
+    p.instructions { text-align: center; margin-bottom: 25px; }
+
+    /* Ranking Container */
+    .ranking-container {
+        max-width: 600px; /* Centered, single column layout */
+        margin: 0 auto;
+        padding: 0;
+    }
+
+    /* Individual Benefit Tile Styles */
+    .benefit-tile {
+        background-color: #fdfdfd;
+        border: 1px solid #ddd;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 10px;
+        cursor: grab; /* Indicates the item can be grabbed */
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease-in-out;
+    }
+    .benefit-tile:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    .benefit-tile.sortable-ghost {
+        /* Style for the placeholder element while dragging */
+        background-color: #e9f4ff;
+        border-style: dashed;
+    }
+    .benefit-tile.sortable-chosen {
+        /* Style for the element being actively dragged */
+        cursor: grabbing;
+        background-color: #fff;
+    }
+
+    /* Content within the tile */
+    .drag-handle {
+        font-size: 1.5em;
+        color: #ccc;
+        margin-right: 20px;
+        line-height: 1;
+    }
+    .benefit-info strong {
+        font-size: 1.2em;
+        color: #333;
+    }
+    .benefit-info p {
+        margin: 5px 0 0 0;
+        color: #555;
+    }
+</style>
+
+<div class="otree-content">
+    <h2>Rank Your Preferred Benefits</h2>
+    <p class="instructions">
+        Please rank the following job benefits from most important (top) to least important (bottom) for you.
+        <br>
+        Click and drag the items to reorder them.
+    </p>
+
+    <input type="hidden" name="benefit_ranking" id="id_benefit_ranking">
+
+    <div id="sortable-list" class="ranking-container">
+        {% for benefit in benefits_to_rank %}
+        <div class="benefit-tile" data-benefit-name="{{ benefit }}">
+            <span class="drag-handle">☰</span>
+            <div class="benefit-info">
+                <strong>{{ benefit }}</strong>
+                <p>{{ benefit_descriptions|get_item:benefit }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sortableList = document.getElementById('sortable-list');
+    const rankingInput = document.getElementById('id_benefit_ranking');
+
+    // Function to update the hidden input field with the current order
+    function updateRankingInput() {
+        const benefitTiles = sortableList.querySelectorAll('.benefit-tile');
+        const currentRanking = Array.from(benefitTiles).map(tile => tile.dataset.benefitName);
+        rankingInput.value = currentRanking.join(',');
+        console.log('Ranking updated:', rankingInput.value); // For debugging
+    }
+
+    // Initialize the SortableJS library on our list
+    new Sortable(sortableList, {
+        animation: 150, // Animation speed in ms
+        ghostClass: 'sortable-ghost', // Class for the drop placeholder
+        chosenClass: 'sortable-chosen', // Class for the item being dragged
+        handle: '.drag-handle', // Restrict dragging to the handle for better UX
+
+        // This function is called when the user finishes dragging an item
+        onEnd: function() {
+            updateRankingInput();
+        }
+    });
+
+    // Set the initial value of the input field when the page loads
+    updateRankingInput();
+    
+    // Ensure the ranking is updated right before the form submits, as a fallback
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function() {
+        updateRankingInput();
+    });
+});
+</script>
+
+{% endblock %}
