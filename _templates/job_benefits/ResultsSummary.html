@@ -71,6 +71,7 @@
         border-bottom: 1px solid #e9ecef;
         font-size: 1.05em;
         color: #495057;
+        overflow: hidden; /* To contain floated elements */
     }
     .summary-section li:last-child {
         border-bottom: none;
@@ -120,21 +121,25 @@
 
     <div class="summary-section">
         <h3>Your Final Job Selection</h3>
-        {% if chosen_package_details %}
-            <p><span class="key">Your Preferred Role:</span> <span class="value">{{ preferred_job_title }}</span></p>
-            <p><span class="key">Your Chosen Package Wage:</span> <span class="value">€{{ chosen_package_details.wage }}/month</span></p>
-            <p><span class="key">Your Chosen Package Benefits:</span> <span class="value">{{ chosen_package_details.benefits }}</span></p>
+        {% if chosen_package_info %}
+            <p><span class="key">Your Preferred Role:</span> <span class="value">{{ preferred_title }}</span></p>
+            <p><span class="key">Your Chosen Package Wage:</span> <span class="value">€{{ chosen_package_info.wage }}/month</span></p>
+            <p><span class="key">Your Chosen Package Benefits:</span> <span class="value">{{ chosen_package_info.benefits }}</span></p>
         {% else %}
             <p>You did not select a final job package.</p>
         {% endif %}
     </div>
 
     <div class="summary-section">
-        <h3>Your Initial Preferences (Round 1)</h3>
+        <h3>Time Spent Viewing Package Details</h3>
         <ul>
-            <li><span class="key">Preferred Monthly Salary:</span> <span class="value">€{{ preferred_salary }}</span></li>
-            <li><span class="key">Willingness to Pay for Gym:</span> <span class="value">€{{ willingness_to_pay_gym }}</span></li>
-            <li><span class="key">Willingness to Pay for Bike:</span> <span class="value">€{{ willingness_to_pay_bike }}</span></li>
+            {% if parsed_time_log %}
+                {% for job_title, time_ms in parsed_time_log.items %}
+                    <li><span class="key">{{ job_title }}:</span> <span class="value">{{ time_ms }}ms</span></li>
+                {% endfor %}
+            {% else %}
+                <li>No time data was recorded.</li>
+            {% endif %}
         </ul>
     </div>
 

@@ -1,6 +1,7 @@
 import logging
 from otree.api import *
 import random
+import json
 
 # =============================================================================
 # 1. MODELS
@@ -187,8 +188,8 @@ class JobOffer(Page):
         self.treatment = treatment  # Store treatment for the record
 
         bonus_desc = ""
-        adjusted_salary = Constants.BASE_SALARY  # Default salary
         player_in_round_1 = self.in_round(1)
+        adjusted_salary = player_in_round_1.preferred_salary or Constants.BASE_SALARY
 
         # Get the job title chosen in round 1
         chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
@@ -228,25 +229,35 @@ class JobSelection(Page):
 
     def vars_for_template(self):
         player_in_round_1 = self.in_round(1)
-        chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+        player_in_final_round = self.in_round(Constants.num_rounds)
+
+        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
+        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
+        # Get the index of the job title chosen on the JobPreference page
+        preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+
+        
         
         chosen_title = "General Position"
-        if chosen_job_index is not None:
-            chosen_title = Constants.JOB_TILES[chosen_job_index]['title']
+        if preferred_job_index is not None:
+            chosen_title = Constants.JOB_TILES[preferred_job_index]['title']
         
-        # --- NEW LOGIC TO CREATE JOB PACKAGES ---
-        # Each "package" will have the same title but different wage/benefit combos.
-        job_packages = []
+        # 1. Create packages for display with the consistent title
+        job_packages_for_display = []
         for i, original_job in enumerate(Constants.JOB_TILES):
-            job_packages.append({
+            job_packages_for_display.append({
                 'title': chosen_title,  # Use the title the participant chose
                 'wage': original_job['wage'],
-                'benefits': original_job['benefits'],
-                'index': i  # The index to identify which package was chosen
+                'benefits_summary': [b for b in original_job.get('benefits', [])],
+                'index': i
             })
             
         return dict(
-            job_packages=job_packages,
+            # Data for displaying the tiles
+            job_packages_for_display=job_packages_for_display,
+            modal_time_log = self.field_maybe_none('modal_time_log'),
+            # Complete, raw data for the JavaScript modal
+            job_tiles_for_script=Constants.JOB_TILES,
         )
 
 class ResultsSummary(Page):
@@ -285,21 +296,32 @@ class ResultsSummary(Page):
                 'bonus_info': bonus_info,
             })
 
-        # --- CORRECTED LOGIC TO DISPLAY THE CHOSEN PACKAGE ---
-        chosen_package_details = None
-        package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
-        if package_index is not None:
-            chosen_package_details = Constants.JOB_TILES[package_index]
+        # 3. Use the local variables that safely stored your data.
+        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
+        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
+        chosen_package_info = None
+        if final_package_index is not None:
+            chosen_package_info = Constants.JOB_TILES[final_package_index]
         
-        preferred_job_title = "Not chosen"
+        preferred_title = "Not chosen"
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         if preferred_job_index is not None:
-            preferred_job_title = Constants.JOB_TILES[preferred_job_index]['title']
+            preferred_title = Constants.JOB_TILES[preferred_job_index]['title']
 
+        parsed_time_log = None
+        if time_log_data:
+            try:
+                parsed_time_log = json.loads(time_log_data)
+            except json.JSONDecodeError:
+                parsed_time_log = {'Error': 'Could not parse time log data.'}
+
+        # 4. Construct the final dictionary for the template.
         return dict(
             accepted_treatments=accepted_treatments,
-            preferred_job_title=preferred_job_title,
-            chosen_package_details=chosen_package_details, # Pass full package to template
+            chosen_package_info=chosen_package_info,
+            preferred_title=preferred_title,
+            parsed_time_log=parsed_time_log,
+            modal_time_log=time_log_data,
             preferred_salary=player_in_round_1.preferred_salary,
             willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
             willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,

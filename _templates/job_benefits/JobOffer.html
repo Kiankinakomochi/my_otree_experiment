@@ -60,7 +60,7 @@
 </style>
 
 <div class="otree-content">
-    <h2>Job Offer – Round {{ player.round_number }}</h2>
+    <h2>Job Offer  Round {{ player.round_number }}</h2>
     <div class="instruction">
         <p>You will be presented with a job offer. Please review the details and make your decision.</p>
     </div>
@@ -89,7 +89,7 @@
         {# ====== SECTION 2: ORIGINAL TREATMENT INTERFACE ================== #}
         {# ================================================================= #}
         {% else %}
-            <p>Base Salary: <strong>€{{ base_salary }}/month</strong></p>
+            <p>Base Salary: <strong>{{ base_salary }}/month</strong></p>
             <p><strong>Bonus Offer:</strong> {{ bonus_desc }}</p>
 
             <div class="form-group">
