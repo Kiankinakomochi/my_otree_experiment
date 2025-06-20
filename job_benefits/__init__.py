@@ -188,8 +188,8 @@ class JobOffer(Page):
         self.treatment = treatment  # Store treatment for the record
 
         bonus_desc = ""
-        adjusted_salary = Constants.BASE_SALARY  # Default salary
         player_in_round_1 = self.in_round(1)
+        adjusted_salary = player_in_round_1.preferred_salary or Constants.BASE_SALARY
 
         # Get the job title chosen in round 1
         chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
@@ -229,8 +229,14 @@ class JobSelection(Page):
 
     def vars_for_template(self):
         player_in_round_1 = self.in_round(1)
+        player_in_final_round = self.in_round(Constants.num_rounds)
+
+        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
+        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
         # Get the index of the job title chosen on the JobPreference page
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+
+        
         
         chosen_title = "General Position"
         if preferred_job_index is not None:
@@ -249,6 +255,7 @@ class JobSelection(Page):
         return dict(
             # Data for displaying the tiles
             job_packages_for_display=job_packages_for_display,
+            modal_time_log = self.field_maybe_none('modal_time_log'),
             # Complete, raw data for the JavaScript modal
             job_tiles_for_script=Constants.JOB_TILES,
         )
@@ -289,20 +296,18 @@ class ResultsSummary(Page):
                 'bonus_info': bonus_info,
             })
 
-        # Get final choice details using the chosen_job_package_index
+        # 3. Use the local variables that safely stored your data.
+        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
+        final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
         chosen_package_info = None
-        package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
-        if package_index is not None:
-            chosen_package_info = Constants.JOB_TILES[package_index]
+        if final_package_index is not None:
+            chosen_package_info = Constants.JOB_TILES[final_package_index]
         
-        # Get initially preferred job title for display
         preferred_title = "Not chosen"
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         if preferred_job_index is not None:
             preferred_title = Constants.JOB_TILES[preferred_job_index]['title']
 
-        # Parse the JSON time log string for display
-        time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
         parsed_time_log = None
         if time_log_data:
             try:
@@ -310,11 +315,13 @@ class ResultsSummary(Page):
             except json.JSONDecodeError:
                 parsed_time_log = {'Error': 'Could not parse time log data.'}
 
+        # 4. Construct the final dictionary for the template.
         return dict(
             accepted_treatments=accepted_treatments,
             chosen_package_info=chosen_package_info,
             preferred_title=preferred_title,
             parsed_time_log=parsed_time_log,
+            modal_time_log=time_log_data,
             preferred_salary=player_in_round_1.preferred_salary,
             willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
             willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,

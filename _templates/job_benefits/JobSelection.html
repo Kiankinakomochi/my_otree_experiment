@@ -67,7 +67,6 @@
     <h2>Select Your Preferred Job Package</h2>
     <p class="instructions">All of the packages below are for the job title you preferred earlier. Click on a package to see a detailed description and confirm your choice.</p>
 
-    <form method="post" id="job-selection-form">
         <input type="hidden" name="chosen_job_package_index" id="chosen_job_package_index_input">
         <input type="hidden" name="modal_time_log" id="modal_time_log_input">
 
@@ -96,37 +95,37 @@
                     <button type="submit" id="modal-confirm-btn" class="btn btn-primary">Confirm Choice</button>
                 </div>
             </div>
-        </div>
-
-    </form>
+        </div> 
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // This uses the raw data from Python for the modal's detailed content
     const jobScriptData = {{ job_tiles_for_script|json }};
     const modal = document.getElementById('job-modal');
-    const form = document.getElementById('job-selection-form');
+    
+    // Correctly find the oTree-generated form by finding the parent form of the submit button
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+    const form = confirmBtn.closest('form');
+    console.log('Form found:', form);
+
     const chosenPackageInput = document.getElementById('chosen_job_package_index_input');
     const timeLogInput = document.getElementById('modal_time_log_input');
     const backBtn = document.getElementById('modal-back-btn');
-    const confirmBtn = document.getElementById('modal-confirm-btn'); 
 
     let timeLog = {};
     let modalOpenTime;
-    let currentlyOpenJobTitle; // Using the original title for the log key
+    let currentlyOpenJobIndex; // Use index as a more reliable key
 
     function openModal(packageIndex) {
-        // Use the raw script data to get all details
         const jobData = jobScriptData[packageIndex];
-        currentlyOpenJobTitle = jobData.title; // Log the original title
+        currentlyOpenJobIndex = packageIndex;
 
         chosenPackageInput.value = packageIndex;
 
-        // Populate modal with details from the script data
         document.getElementById('modal-title').textContent = jobData.title;
         document.getElementById('modal-description').textContent = jobData.description;
         document.getElementById('modal-wage').textContent = `€${jobData.wage}`;
+        
         const benefitsList = document.getElementById('modal-benefits');
         benefitsList.innerHTML = '';
         jobData.benefits.forEach(benefitName => {
@@ -135,22 +134,29 @@ document.addEventListener('DOMContentLoaded', function() {
             li.innerHTML = `<strong>${benefitName}:</strong> ${benefitDescription}`;
             benefitsList.appendChild(li);
         });
-        
+
         modalOpenTime = new Date().getTime();
         modal.style.display = 'block';
     }
 
-    function closeModalAndLogTime() {
-        if (!modalOpenTime) return;
+    function logTime() {
+        if (!modalOpenTime || currentlyOpenJobIndex === null) return;
+        
         const timeElapsed = new Date().getTime() - modalOpenTime;
-        if (timeLog[currentlyOpenJobTitle]) {
-            timeLog[currentlyOpenJobTitle] += timeElapsed;
+        const jobTitle = jobScriptData[currentlyOpenJobIndex].title; // Get title for logging
+
+        if (timeLog[jobTitle]) {
+            timeLog[jobTitle] += timeElapsed;
         } else {
-            timeLog[currentlyOpenJobTitle] = timeElapsed;
+            timeLog[jobTitle] = timeElapsed;
         }
+        modalOpenTime = null; 
+        currentlyOpenJobIndex = null;
+    }
+    
+    function closeModal() {
+        logTime();
         modal.style.display = 'none';
-        modalOpenTime = null;
-        currentlyOpenJobTitle = null;
     }
 
     document.querySelectorAll('.package-tile').forEach(tile => {
@@ -160,26 +166,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     backBtn.addEventListener('click', function() {
-        closeModalAndLogTime();
-        chosenPackageInput.value = '';
+        closeModal();
+        chosenPackageInput.value = ''; // Clear choice when going back
     });
 
     window.addEventListener('click', function(event) {
         if (event.target == modal) {
-            closeModalAndLogTime();
-            chosenPackageInput.value = '';
+            closeModal();
+            chosenPackageInput.value = ''; // Clear choice if clicked outside
         }
     });
-    confirmBtn.addEventListener('click', function() {
-    if (chosenPackageInput.value === '') {
-        alert('Please make a selection first by clicking a package and pressing "Confirm Choice".');
-        return;
-    }
-    closeModalAndLogTime();
-    timeLogInput.value = JSON.stringify(timeLog);
-    form.submit();
+
+    // The ONLY listener needed for submission.
+    // This will execute when the user clicks the "Confirm Choice" button.
+    form.addEventListener('submit', function(event) {
+        // If the modal is still open when the form is submitted, log its time.
+        logTime(); 
+        
+        // Finalize the value of the hidden input right before the form is sent.
+        timeLogInput.value = JSON.stringify(timeLog);
+
+        // A final validation check before allowing submission.
+        if (chosenPackageInput.value === '') {
+            event.preventDefault(); // Stop the form from submitting
+            alert('Your choice was cleared. Please select a package again and click "Confirm Choice".');
+        }
+        
     });
 });
+</script>
 </script>
 
 {% endblock %}
