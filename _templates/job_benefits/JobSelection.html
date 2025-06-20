@@ -80,7 +80,7 @@
             <div class="package-tile" data-index="{{ package.index }}">
                 <strong>{{ package.title }}</strong>
                 <div class="wage">Annual Salary: €{{ package.wage }}</div>
-                <div class="benefits">Benefit: {{ package.benefits_summary|join:", " }}</div>
+                <div class="benefits">Benefit: {{ package.benefits_summary }}</div>
             </div>
             {% endfor %}
         </div>

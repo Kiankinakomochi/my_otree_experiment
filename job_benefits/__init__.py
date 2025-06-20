@@ -210,11 +210,18 @@ class BenefitRanking(Page):
         return self.round_number == 1
 
     def vars_for_template(self):
-        # Pass the list of benefits and their descriptions to the template
-        return {
-            'benefits_to_rank': Constants.BENEFITS_TO_RANK,
-            'benefit_descriptions': Constants.BENEFIT_DESCRIPTIONS,
-        }
+        """
+        This method now pre-processes the data in Python to make it easier for the template.
+        It combines the benefit names and descriptions into a single list of dictionaries.
+        """
+        benefits_data = []
+        for benefit_name in Constants.BENEFITS_TO_RANK:
+            benefits_data.append({
+                'name': benefit_name,
+                'description': Constants.BENEFIT_DESCRIPTIONS.get(benefit_name, 'Description not found.')
+            })
+        
+        return {'benefits_data': benefits_data}
 
 
 class JobOffer(Page):
