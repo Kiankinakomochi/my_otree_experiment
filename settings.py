@@ -3,15 +3,11 @@ import os
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'your-secret-key-here'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG = False
 
 # Application definition
 INSTALLED_APPS = [
     'otree',
-    # add other Django apps here if needed
 ]
 
 MIDDLEWARE = [
@@ -27,7 +23,7 @@ MIDDLEWARE = [
 SESSION_CONFIGS = [
     dict(
         name='job_benefits',
-        display_name="Job Benefits Experiment",
+        display_name="Job Selection Experiment",
         num_demo_participants=1,
         app_sequence=['job_benefits'],
     ),
