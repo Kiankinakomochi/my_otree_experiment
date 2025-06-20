@@ -114,15 +114,18 @@ class Group(BaseGroup):
 
 class Player(BasePlayer):
     # --- Fields for ValuePerception page (Round 1) ---
+    # These fields now store the *monthly* willingness to pay.
     willingness_to_pay_gym = models.CurrencyField(
-        label="What is the maximum amount you would be willing to pay per year for a premium gym membership (access to all facilities, classes, etc.)?",
+        label="What is the maximum amount you would be willing to pay per month for a premium gym membership (access to all facilities, classes, etc.)?",
         blank=False,
         min=0,
-        max=10000,
+        max=10000 / 12, # Adjusted max to be more reasonable for monthly
     )
     willingness_to_pay_bike = models.CurrencyField(
-        label="What is the maximum amount you would be willing to pay per year for a work bicycle (including maintenance and insurance)?",
-        blank=False, min=0, max=10000
+        label="What is the maximum amount you would be willing to pay per month for a work bicycle (including maintenance and insurance)?",
+        blank=False,
+        min=0,
+        max=10000 / 12, # Adjusted max to be more reasonable for monthly
     )
 
     # --- Fields for NEW JobPreference page (Round 1) ---
@@ -326,13 +329,17 @@ class JobOffer(Page):
         job_title = "General Position"
         if chosen_job_index is not None:
             job_title = Constants.JOB_TILES[chosen_job_index]['title']
+        
+        # Multiply the monthly willingness to pay by 12 for yearly display
+        yearly_wtp_gym = player_in_round_1.willingness_to_pay_gym * 12
+        yearly_wtp_bike = player_in_round_1.willingness_to_pay_bike * 12
 
         return dict(
             job_title=job_title,
             base_salary=base_salary,  # Use the clean, non-adjusted salary
             treatment=self.treatment,
-            wtp_gym=player_in_round_1.willingness_to_pay_gym,
-            wtp_bike=player_in_round_1.willingness_to_pay_bike,
+            wtp_gym=yearly_wtp_gym,  # Now displays the yearly amount
+            wtp_bike=yearly_wtp_bike,  # Now displays the yearly amount
             Constants=Constants
         )
 
@@ -413,6 +420,10 @@ class ResultsSummary(Page):
             except json.JSONDecodeError:
                 parsed_time_log = {'Error': 'Could not parse time log data.'}
 
+        # Multiply the monthly willingness to pay by 12 for yearly display on results summary
+        yearly_wtp_gym = player_in_round_1.willingness_to_pay_gym * 12
+        yearly_wtp_bike = player_in_round_1.willingness_to_pay_bike * 12
+
         # 4. Construct the final dictionary for the template.
         return dict(
             accepted_treatments=accepted_treatments,
@@ -421,8 +432,8 @@ class ResultsSummary(Page):
             parsed_time_log=parsed_time_log,
             modal_time_log=time_log_data,
             preferred_salary=player_in_round_1.preferred_salary,
-            willingness_to_pay_gym=player_in_round_1.willingness_to_pay_gym,
-            willingness_to_pay_bike=player_in_round_1.willingness_to_pay_bike,
+            willingness_to_pay_gym=yearly_wtp_gym,  # Now displays the yearly amount
+            willingness_to_pay_bike=yearly_wtp_bike,  # Now displays the yearly amount
             benefit_ranking=player_in_round_1.field_maybe_none('benefit_ranking'), # Show ranking on results
         )
 
