@@ -90,13 +90,13 @@ class Player(BasePlayer):
     # --- Fields for ValuePerception page (Round 1) ---
     willingness_to_pay_gym = models.CurrencyField(
         label="What is the maximum amount you would be willing to pay per year for a premium gym membership (access to all facilities, classes, etc.)?",
-        blank=True,
+        blank=False,
         min=0,
         max=10000,
     )
     willingness_to_pay_bike = models.CurrencyField(
         label="What is the maximum amount you would be willing to pay per year for a work bicycle (including maintenance and insurance)?",
-        blank=True, min=0, max=10000
+        blank=False, min=0, max=10000
     )
 
     # --- Fields for NEW JobPreference page (Round 1) ---
@@ -106,7 +106,7 @@ class Player(BasePlayer):
     )
     preferred_salary = models.CurrencyField(
         label="What is your preferred yearly salary for this position?",
-        blank=True,
+        blank=False,
         min=0
     )
 
