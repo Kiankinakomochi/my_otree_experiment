@@ -57,10 +57,14 @@
     .otree-form-group {
         padding: 1rem 0;
     }
+    .radio label {
+        display: block;
+        padding: 5px 0;
+    }
 </style>
 
 <div class="otree-content">
-    <h2>Job Offer  Round {{ player.round_number }}</h2>
+    <h2>Job Offer - Round {{ player.round_number }}</h2>
     <div class="instruction">
         <p>You will be presented with a job offer. Please review the details and make your decision.</p>
     </div>
@@ -68,21 +72,67 @@
     <form method="post">
 
         {# ================================================================= #}
-        {# ====== SECTION 1: NEW 'CHOICE' TREATMENT INTERFACE ============== #}
+        {# ====== SECTION 1: MODIFIED 'CHOICE' TREATMENT INTERFACE ========= #}
         {# ================================================================= #}
         {% if treatment == 'Choice' %}
-            <p>For the following offers, you have three options: accept a cash bonus, accept the non-monetary benefit itself, or reject the offer.</p>
+            <p>For the following offers, you have three options: accept a cash bonus equivalent to your stated willingness-to-pay, accept the non-monetary benefit itself, or reject the offer. The salary is based on your previously stated preference.</p>
 
             <div id="gym-choice-block" class="choice-block">
                 <h3>Offer 1: Gym Membership</h3>
-                <p>You are offered a job with a base salary of <strong>€{{ Constants.BASE_SALARY }}/month</strong> plus one of the following options. Please choose one.</p>
-                {% formfield player.gym_choice  label='Your choice for the Gym Membership offer:' %}
+                <p>You are offered a job with your preferred salary of <strong>{{ base_salary }}/month</strong>. As part of this offer, you can choose one of the following options:</p>
+                
+                <div class="otree-form-group">
+                    <label>Your choice for the Gym Membership offer:</label>
+                    <div class="controls">
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="gym_choice" value="Cash" required>
+                                Cash bonus of {{ wtp_gym }}
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="gym_choice" value="Benefit" required>
+                                Benefit: Gym Membership
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="gym_choice" value="Reject" required>
+                                Reject the offer
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="bike-choice-block" class="choice-block">
                 <h3>Offer 2: Work Bike</h3>
-                <p>You are also presented with a second, independent offer for the same base salary. Please choose one.</p>
-                {% formfield player.bike_choice label='Your choice for the Work Bike offer:' %}
+                <p>You are also presented with a second, independent offer. With the same preferred salary of <strong>{{ base_salary }}/month</strong>, you can choose one of the following options:</p>
+
+                <div class="otree-form-group">
+                    <label>Your choice for the Work Bike offer:</label>
+                    <div class="controls">
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="bike_choice" value="Cash" required>
+                                Cash bonus of {{ wtp_bike }}
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="bike_choice" value="Benefit" required>
+                                Benefit: Work Bike
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="bike_choice" value="Reject" required>
+                                Reject the offer
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         {# ================================================================= #}
