@@ -1,6 +1,10 @@
 {% extends "global/Page.html" %}
 {% load otree %}
 
+{% block title %}
+    Job Selection
+{% endblock %}
+
 {% block content %}
 
 <style>
@@ -65,8 +69,9 @@
 
 <div class="otree-content">
     <h2>Select Your Preferred Job Package</h2>
-    <p class="instructions">All of the packages below are for the job title you preferred earlier. Click on a package to see a detailed description and confirm your choice.</p>
+    <p class="instructions">All of the packages below are for the job title you preferred earlier. Review the different combinations of salary and benefits, then click on a package to confirm your choice.</p>
 
+    <form>
         <input type="hidden" name="chosen_job_package_index" id="chosen_job_package_index_input">
         <input type="hidden" name="modal_time_log" id="modal_time_log_input">
 
@@ -74,8 +79,8 @@
             {% for package in job_packages_for_display %}
             <div class="package-tile" data-index="{{ package.index }}">
                 <strong>{{ package.title }}</strong>
-                <div class="wage">Wage: €{{ package.wage }}</div>
-                <div class="benefits">Benefits: {{ package.benefits_summary }}</div>
+                <div class="wage">Annual Salary: €{{ package.wage }}</div>
+                <div class="benefits">Benefit: {{ package.benefits_summary|join:", " }}</div>
             </div>
             {% endfor %}
         </div>
@@ -83,11 +88,11 @@
         <div id="job-modal" class="modal">
             <div class="modal-content">
                 <h3 id="modal-title"></h3>
-                <p id="modal-description"></p>
+                <p id="modal-description">Please review the salary and benefits for this offer.</p>
                 <hr>
-                <p><strong>Salary:</strong> <span id="modal-wage" class="salary-text"></span> / month</p>
+                <p><strong>Annual Salary:</strong> <span id="modal-wage" class="salary-text"></span></p>
                 <div>
-                    <strong>Benefits:</strong>
+                    <strong>Benefit Offered:</strong>
                     <ul id="modal-benefits"></ul>
                 </div>
                 <div class="button-group">
@@ -95,18 +100,18 @@
                     <button type="submit" id="modal-confirm-btn" class="btn btn-primary">Confirm Choice</button>
                 </div>
             </div>
-        </div> 
+        </div>
+    </form>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // This variable now holds the dynamically generated job packages for this specific participant
     const jobScriptData = {{ job_tiles_for_script|json }};
     const modal = document.getElementById('job-modal');
     
-    // Correctly find the oTree-generated form by finding the parent form of the submit button
-    const confirmBtn = document.getElementById('modal-confirm-btn');
-    const form = confirmBtn.closest('form');
-    console.log('Form found:', form);
+    // Find the oTree-generated form
+    const form = document.querySelector('form');
 
     const chosenPackageInput = document.getElementById('chosen_job_package_index_input');
     const timeLogInput = document.getElementById('modal_time_log_input');
@@ -114,41 +119,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let timeLog = {};
     let modalOpenTime;
-    let currentlyOpenJobIndex; // Use index as a more reliable key
+    let currentlyOpenJobIndex; // Use the tile's index as a reliable key
 
     function openModal(packageIndex) {
+        // --- MODIFIED LOGIC STARTS HERE ---
         const jobData = jobScriptData[packageIndex];
         currentlyOpenJobIndex = packageIndex;
 
         chosenPackageInput.value = packageIndex;
 
         document.getElementById('modal-title').textContent = jobData.title;
-        document.getElementById('modal-description').textContent = jobData.description;
         document.getElementById('modal-wage').textContent = `€${jobData.wage}`;
         
         const benefitsList = document.getElementById('modal-benefits');
-        benefitsList.innerHTML = '';
-        jobData.benefits.forEach(benefitName => {
+        benefitsList.innerHTML = ''; // Clear previous benefits
+
+        // The new data structure has 'benefits_summary', which is a list. We loop through it.
+        jobData.benefits_summary.forEach(benefitName => {
             const li = document.createElement('li');
+            // We get the detailed description from the 'benefit_details' dictionary
             const benefitDescription = jobData.benefit_details[benefitName] || 'Details not available.';
             li.innerHTML = `<strong>${benefitName}:</strong> ${benefitDescription}`;
             benefitsList.appendChild(li);
         });
+        // --- MODIFIED LOGIC ENDS HERE ---
 
         modalOpenTime = new Date().getTime();
         modal.style.display = 'block';
     }
 
+    // This time-keeping logic remains unchanged and will work correctly.
     function logTime() {
         if (!modalOpenTime || currentlyOpenJobIndex === null) return;
         
         const timeElapsed = new Date().getTime() - modalOpenTime;
-        const jobTitle = jobScriptData[currentlyOpenJobIndex].title; // Get title for logging
+        // Use the index as the key for the time log to handle any potential duplicate titles
+        const logKey = `Tile Index ${currentlyOpenJobIndex}`;
 
-        if (timeLog[jobTitle]) {
-            timeLog[jobTitle] += timeElapsed;
+        if (timeLog[logKey]) {
+            timeLog[logKey] += timeElapsed;
         } else {
-            timeLog[jobTitle] = timeElapsed;
+            timeLog[logKey] = timeElapsed;
         }
         modalOpenTime = null; 
         currentlyOpenJobIndex = null;
@@ -177,24 +188,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // The ONLY listener needed for submission.
-    // This will execute when the user clicks the "Confirm Choice" button.
+    // The form submission logic remains unchanged.
     form.addEventListener('submit', function(event) {
-        // If the modal is still open when the form is submitted, log its time.
         logTime(); 
         
-        // Finalize the value of the hidden input right before the form is sent.
         timeLogInput.value = JSON.stringify(timeLog);
 
-        // A final validation check before allowing submission.
         if (chosenPackageInput.value === '') {
             event.preventDefault(); // Stop the form from submitting
             alert('Your choice was cleared. Please select a package again and click "Confirm Choice".');
         }
-        
     });
 });
-</script>
 </script>
 
 {% endblock %}
