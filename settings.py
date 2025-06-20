@@ -3,7 +3,7 @@ import os
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'your-secret-key-here'
 
-DEBUG = True
+DEBUG = False
 
 # Application definition
 INSTALLED_APPS = [
