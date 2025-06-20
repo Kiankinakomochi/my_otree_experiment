@@ -15,10 +15,9 @@ class Constants(BaseConstants):
     TREATMENTS = ['Cash Bonus', 'Non-Monetary Perk', 'Choice']
 
     BASE_SALARY = 3000
-    CASH_BONUS = 500
+    CASH_BONUS = 800
     NON_MONETARY_PERKS = ['Gym Membership', 'Work Bike']
 
-    # --- NEW ---
     # This list defines the benefits that will be presented to the user for ranking.
     # It's crucial that the text here exactly matches what you might use elsewhere if you're cross-referencing.
     BENEFITS_TO_RANK = [
@@ -142,24 +141,21 @@ class Player(BasePlayer):
     benefit_ranking = models.LongStringField(blank=True)
 
     treatment = models.StringField()
-    accept_offer = models.BooleanField(label="Do you accept this job offer?", blank=True)
-    perk_offered = models.StringField(blank=True)
-    gym_choice = models.StringField(
-        choices=[['Cash', 'Accept Cash Offer'], ['Benefit', 'Accept Gym Membership'], ['Reject', 'Reject Offer']],
-        widget=widgets.RadioSelect,
-        blank=True
-    )
-    bike_choice = models.StringField(
-        choices=[['Cash', 'Accept Cash Offer'], ['Benefit', 'Accept Work Bike'], ['Reject', 'Reject Offer']],
-        widget=widgets.RadioSelect,
-        blank=True
-    )
     
-    # This field now stores the index of the chosen package from Constants.JOB_TILES
-    chosen_job_package_index = models.IntegerField(
-        label="Please choose your preferred job package.",
-        blank=True
-    )
+    # NEW fields for the 'Cash Bonus' round
+    accept_cash_gym = models.BooleanField(label="Do you accept this cash offer?", blank=True)
+    accept_cash_bike = models.BooleanField(label="Do you accept this cash offer?", blank=True)
+
+    # NEW fields for the 'Non-Monetary Perk' round
+    accept_perk_gym = models.BooleanField(label="Do you accept the Gym Membership offer?", blank=True)
+    accept_perk_bike = models.BooleanField(label="Do you accept the Work Bike offer?", blank=True)
+
+    # Fields for the 'Choice' round (unchanged)
+    gym_choice = models.StringField(choices=[['Cash', 'Accept Cash'], ['Benefit', 'Accept Gym Membership'], ['Reject', 'Reject Offer']], widget=widgets.RadioSelect, blank=True)
+    bike_choice = models.StringField(choices=[['Cash', 'Accept Cash'], ['Benefit', 'Accept Work Bike'], ['Reject', 'Reject Offer']], widget=widgets.RadioSelect, blank=True)
+    
+    # --- Field for Final Job Selection Task ---
+    chosen_job_package_index = models.IntegerField(label="Chosen Job Package", blank=True)
     modal_time_log = models.StringField(blank=True)
 
     def get_dynamic_job_packages(self):
@@ -174,11 +170,12 @@ class Player(BasePlayer):
         # Use a sensible default for salary if not provided
         preferred_salary = player_in_round_1.field_maybe_none('preferred_salary') or Constants.BASE_SALARY
         
-        # Use WTP as the "Numéraire" for salary sacrifice
-        wtp_sum = (player_in_round_1.field_maybe_none('willingness_to_pay_gym') or 0) + \
-                  (player_in_round_1.field_maybe_none('willingness_to_pay_bike') or 0)
+        # --- MODIFIED LOGIC ---
+        # Instead of using the flawed wtp_sum, we now define the salary trade-off range
+        # using the experiment's own CASH_BONUS value. This makes the trade-off
+        # consistent and economically meaningful across all participants and benefits.
+        max_salary_reduction = Constants.CASH_BONUS
 
-        # Get the preferred job title
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
         chosen_title = "General Position"
         if preferred_job_index is not None and preferred_job_index < len(Constants.JOB_TILES):
@@ -195,8 +192,8 @@ class Player(BasePlayer):
         ranked_benefits = ranked_benefits_str.split(',')
         
         tier1_salary = preferred_salary
-        tier4_salary = max(0, preferred_salary - wtp_sum)
-        salary_step = (tier1_salary - tier4_salary) / 3 if wtp_sum > 0 else 0
+        tier4_salary = max(0, preferred_salary - max_salary_reduction)
+        salary_step = (tier1_salary - tier4_salary) / 3 if max_salary_reduction > 0 else 0
         
         salaries = [
             round(tier1_salary),
@@ -307,8 +304,11 @@ class JobOffer(Page):
         treatment = self.participant.vars['treatment_order'][self.round_number - 1]
         if treatment == 'Choice':
             return ['gym_choice', 'bike_choice']
-        else:
-            return ['accept_offer']
+        elif treatment == 'Cash Bonus':
+            return ['accept_cash_gym', 'accept_cash_bike']
+        elif treatment == 'Non-Monetary Perk':
+            return ['accept_perk_gym', 'accept_perk_bike']
+        return []
 
     def vars_for_template(self):
         treatment = self.participant.vars['treatment_order'][self.round_number - 1]
@@ -316,30 +316,21 @@ class JobOffer(Page):
 
         bonus_desc = ""
         player_in_round_1 = self.in_round(1)
-        adjusted_salary = player_in_round_1.preferred_salary or Constants.BASE_SALARY
+        
+        # --- REVISED LOGIC ---
+        # The base salary is ALWAYS the preferred salary. No more adjustments.
+        base_salary = player_in_round_1.preferred_salary or Constants.BASE_SALARY
 
         # Get the job title chosen in round 1
         chosen_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
-        job_title = "General Position" # Default title
+        job_title = "General Position"
         if chosen_job_index is not None:
             job_title = Constants.JOB_TILES[chosen_job_index]['title']
 
-        if treatment == 'Cash Bonus':
-            bonus_desc = f"Cash bonus of €{Constants.CASH_BONUS}"
-        elif treatment == 'Non-Monetary Perk':
-            perk = random.choice(Constants.NON_MONETARY_PERKS)
-            self.perk_offered = perk
-            # The salary adjustment logic remains as it was
-            if perk == 'Gym Membership':
-                adjusted_salary -= player_in_round_1.willingness_to_pay_gym
-            elif perk == 'Work Bike':
-                adjusted_salary -= player_in_round_1.willingness_to_pay_bike
-            bonus_desc = f"Non-monetary perk: {perk}"
         return dict(
             job_title=job_title,
-            base_salary=adjusted_salary,
-            treatment=treatment,
-            bonus_desc=bonus_desc,
+            base_salary=base_salary,  # Use the clean, non-adjusted salary
+            treatment=self.treatment,
             wtp_gym=player_in_round_1.willingness_to_pay_gym,
             wtp_bike=player_in_round_1.willingness_to_pay_bike,
             Constants=Constants
@@ -371,36 +362,33 @@ class ResultsSummary(Page):
 
     def vars_for_template(self):
         player_in_round_1 = self.in_round(1)
-        player_in_final_round = self.in_round(Constants.num_rounds)
-
+        
         accepted_treatments = []
         for p in self.in_all_rounds():
-            bonus_info = "N/A"
-            accepted_info = "No"  # Default
-
-            if p.treatment == 'Choice':
-                gym = p.gym_choice or "No decision"
-                bike = p.bike_choice or "No decision"
-                bonus_info = f"Gym: {gym}, Bike: {bike}"
-                if p.gym_choice in ['Cash', 'Benefit'] or p.bike_choice in ['Cash', 'Benefit']:
-                    accepted_info = "Yes (at least one)"
+            bonus_info = ""
+            accepted_info = ""
+            
+            if p.treatment == 'Cash Bonus':
+                gym_decision = "Accepted" if p.accept_cash_gym else "Rejected"
+                bike_decision = "Accepted" if p.accept_cash_bike else "Rejected"
+                bonus_info = f"Gym-Cash Offer: {gym_decision}, Bike-Cash Offer: {bike_decision}"
 
             elif p.treatment == 'Non-Monetary Perk':
-                bonus_info = p.perk_offered
-                if p.accept_offer:
-                    accepted_info = "Yes"
-            elif p.treatment == 'Cash Bonus':
-                bonus_info = f"€{Constants.CASH_BONUS}"
-                if p.accept_offer:
-                    accepted_info = "Yes"
-            
+                gym_decision = "Accepted" if p.accept_perk_gym else "Rejected"
+                bike_decision = "Accepted" if p.accept_perk_bike else "Rejected"
+                bonus_info = f"Gym Perk Offer: {gym_decision}, Bike Perk Offer: {bike_decision}"
+
+            elif p.treatment == 'Choice':
+                gym_decision = p.gym_choice or "No decision"
+                bike_decision = p.bike_choice or "No decision"
+                bonus_info = f"Gym Choice: {gym_decision}, Bike Choice: {bike_decision}"
+
             accepted_treatments.append({
                 'round_number': p.round_number,
                 'treatment': p.treatment,
-                'accepted': accepted_info,
                 'bonus_info': bonus_info,
             })
-            
+        player_in_final_round = self.in_round(Constants.num_rounds)
         # --- THE FIX IS HERE ---
         # 1. Regenerate the exact same list of tiles shown to the player by calling the new helper method.
         job_packages_for_display = player_in_final_round.get_dynamic_job_packages()

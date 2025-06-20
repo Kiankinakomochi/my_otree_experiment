@@ -1,179 +1,90 @@
 {% load otree %}
 
 {% block content %}
-<style>
-    body {
-        font-family: 'Arial', sans-serif;
-        background-color: #f4f4f4;
-        color: #333;
-    }
-    .otree-content {
-        background-color: #fff;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        max-width: 800px;
-        margin: 30px auto;
-    }
-    h2, h3 {
-        color: #0056b3;
-    }
-    strong {
-        color: #0056b3;
-    }
-    .instruction {
-        background-color: #e7f3ff;
-        border-left: 5px solid #007bff;
-        padding: 15px 20px;
-        margin-bottom: 20px;
-        border-radius: 5px;
-    }
-    button[type="submit"] {
-        background-color: #007bff;
-        color: white;
-        padding: 12px 25px;
-        border: none;
-        border-radius: 5px;
-        font-size: 1.1em;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 20px;
-    }
-    button[type="submit"]:hover {
-        background-color: #0056b3;
-    }
-    .choice-block {
-        border: 1px solid #ddd;
-        padding: 20px;
-        margin-top: 20px;
-        border-radius: 5px;
-        background-color: #fafafa;
-    }
-    /* Hide the bike choice block initially */
-    #bike-choice-block {
-        display: none;
-    }
-    .otree-form-group {
-        padding: 1rem 0;
-    }
-    .radio label {
-        display: block;
-        padding: 5px 0;
-    }
-</style>
 
 <div class="otree-content">
     <h2>Job Offer - Round {{ player.round_number }}</h2>
-    <div class="instruction">
-        <p>You will be presented with a job offer. Please review the details and make your decision.</p>
-    </div>
+    <p class="instructions">
+        You are being considered for the position of <strong>{{ job_title }}</strong> 
+        with your preferred base salary of <strong>€{{ base_salary }}</strong> per month.
+        <br>
+        In this round, you will be presented with two independent offers. Please evaluate each one and make your decision.
+    </p>
 
     <form method="post">
 
         {# ================================================================= #}
-        {# ====== SECTION 1: MODIFIED 'CHOICE' TREATMENT INTERFACE ========= #}
+        {# ====== TREATMENT 1: CASH BONUS (TWO OFFERS) ===================== #}
         {# ================================================================= #}
-        {% if treatment == 'Choice' %}
-            <p>For the following offers, you have three options: accept a cash bonus equivalent to your stated willingness-to-pay, accept the non-monetary benefit itself, or reject the offer. The salary is based on your previously stated preference.</p>
+        {% if treatment == 'Cash Bonus' %}
+            <p>For each offer below, you can accept a cash bonus (valued at your previously stated willingness-to-pay) or reject the offer.</p>
 
-            <div id="gym-choice-block" class="choice-block">
+            <div class="choice-block">
+                <h3>Offer 1: Gym-Equivalent Cash Bonus</h3>
+                <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_gym }}</strong>.</p>
+                {% formfield player.accept_cash_gym %}
+            </div>
+
+            <div class="choice-block">
+                <h3>Offer 2: Bike-Equivalent Cash Bonus</h3>
+                <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_bike }}</strong>.</p>
+                {% formfield player.accept_cash_bike %}
+            </div>
+
+        {# ================================================================= #}
+        {# ====== TREATMENT 2: NON-MONETARY PERK (TWO OFFERS) ============== #}
+        {# ================================================================= #}
+        {% elif treatment == 'Non-Monetary Perk' %}
+            <p>For each offer below, you can accept the non-monetary benefit or reject the offer.</p>
+
+            <div class="choice-block">
                 <h3>Offer 1: Gym Membership</h3>
-                <p>You are offered a job with your preferred salary of <strong>{{ base_salary }}/month</strong>. As part of this offer, you can choose one of the following options:</p>
-                
-                <div class="otree-form-group">
-                    <label>Your choice for the Gym Membership offer:</label>
-                    <div class="controls">
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="gym_choice" value="Cash" required>
-                                Cash bonus of {{ wtp_gym }}
-                            </label>
-                        </div>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="gym_choice" value="Benefit" required>
-                                Benefit: Gym Membership
-                            </label>
-                        </div>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="gym_choice" value="Reject" required>
-                                Reject the offer
-                            </label>
-                        </div>
-                    </div>
-                </div>
+                <p>In addition to your salary, you are offered a <strong>Premium Gym Membership</strong>.</p>
+                {% formfield player.accept_perk_gym %}
             </div>
 
-            <div id="bike-choice-block" class="choice-block">
+            <div class="choice-block">
                 <h3>Offer 2: Work Bike</h3>
-                <p>You are also presented with a second, independent offer. With the same preferred salary of <strong>{{ base_salary }}/month</strong>, you can choose one of the following options:</p>
-
-                <div class="otree-form-group">
-                    <label>Your choice for the Work Bike offer:</label>
-                    <div class="controls">
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="bike_choice" value="Cash" required>
-                                Cash bonus of {{ wtp_bike }}
-                            </label>
-                        </div>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="bike_choice" value="Benefit" required>
-                                Benefit: Work Bike
-                            </label>
-                        </div>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="bike_choice" value="Reject" required>
-                                Reject the offer
-                            </label>
-                        </div>
-                    </div>
-                </div>
+                <p>In addition to your salary, you are offered a <strong>Work Bike</strong> (including maintenance and insurance).</p>
+                {% formfield player.accept_perk_bike %}
             </div>
 
-        {# ================================================================= #}
-        {# ====== SECTION 2: ORIGINAL TREATMENT INTERFACE ================== #}
-        {# ================================================================= #}
-        {% else %}
-            <p>Base Salary: <strong>{{ base_salary }}/month</strong></p>
-            <p><strong>Bonus Offer:</strong> {{ bonus_desc }}</p>
 
-            <div class="form-group">
-                {% formfield player.accept_offer %}
+        {# ================================================================= #}
+        {# ====== TREATMENT 3: CHOICE (TWO OFFERS) ========================= #}
+        {# ================================================================= #}
+        {% elif treatment == 'Choice' %}
+            <p>For each offer below, you have three options: accept a cash bonus (valued at your willingness-to-pay), accept the non-monetary benefit itself, or reject the offer.</p>
+
+            <div class="choice-block">
+                <h3>Offer 1: Gym Membership or Cash</h3>
+                {% formfield player.gym_choice  label='Your choice for the Gym Membership offer:' %}
             </div>
-        {% endif %}
 
+            <div class="choice-block">
+                <h3>Offer 2: Work Bike or Cash</h3>
+                {% formfield player.bike_choice  label='Your choice for the Work Bike offer:' %}
+            </div>
+            {% endif %}
         <hr>
-        <button type="submit">Submit Decision</button>
+        <button type="submit" class="otree-btn-next btn btn-primary">Submit Decisions</button>
     </form>
 </div>
 
-{% if treatment == 'Choice' %}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const gymChoiceRadios = document.querySelectorAll('input[name="gym_choice"]');
-        const bikeChoiceBlock = document.getElementById('bike-choice-block');
+<style>
+    .choice-block {
+        border: 1px solid #ccc;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    .instructions {
+        text-align: center;
+        margin-bottom: 25px;
+        font-size: 1.1em;
+    }
+</style>
 
-        // Function to show the bike choice block
-        function showBikeChoice() {
-            bikeChoiceBlock.style.display = 'block';
-        }
-
-        // Add event listener to each radio button in the gym choice group
-        gymChoiceRadios.forEach(radio => {
-            radio.addEventListener('change', showBikeChoice);
-        });
-
-        // If a choice was already made (e.g., on a page reload after an error), show the block
-        const checkedGymRadio = document.querySelector('input[name="gym_choice"]:checked');
-        if (checkedGymRadio) {
-            showBikeChoice();
-        }
-    });
-</script>
-{% endif %}
 
 {% endblock %}

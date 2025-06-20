@@ -65,12 +65,11 @@
     }
 
     .summary-section li {
-        margin-bottom: 10px;
-        padding: 8px 0;
+        margin-bottom: 12px;
+        padding: 10px 0;
         border-bottom: 1px solid #e9ecef;
         font-size: 1.05em;
         color: #495057;
-        overflow: hidden; /* To contain floated elements */
     }
     .summary-section li:last-child {
         border-bottom: none;
@@ -78,40 +77,37 @@
     
     .summary-section .key {
         font-weight: bold;
+        display: block; /* Make the key appear on its own line */
+        margin-bottom: 5px;
     }
     
     .summary-section .value {
         float: right;
     }
-
-    .accepted {
-        color: #28a745; /* Green for accepted */
-        font-weight: bold;
+    
+    .details {
+        font-size: 0.95em;
+        color: #555;
     }
 
-    .rejected {
-        color: #dc3545; /* Red for rejected */
-        font-weight: bold;
-    }
 </style>
 
 <div class="otree-content-main">
+
+    <h2>Summary of Your Choices</h2>
 
     <div class="summary-section">
         <h3>Job Offer Decisions (Rounds 1-3)</h3>
         <ul>
         {% for item in accepted_treatments %}
             <li>
-                <span class="key">Round {{item.round_number}} ({{ item.treatment }}):</span>
-                <span class="value {% if 'Yes' in item.accepted %}accepted{% else %}rejected{% endif %}">
-                    {% if 'Yes' in item.accepted %}
-                        Accepted
-                    {% else %}
-                        Rejected
-                    {% endif %}
-                </span>
-                <br>
-                <small>Details: {{ item.bonus_info }}</small>
+                <span class="key">Round {{item.round_number}} ({{ item.treatment }})</span>
+                
+                {# MODIFIED PART: Display the detailed bonus_info directly #}
+                {# This correctly shows the outcome of the two independent offers #}
+                <div class="details">
+                    {{ item.bonus_info }}
+                </div>
             </li>
         {% endfor %}
         </ul>
@@ -120,9 +116,9 @@
     <div class="summary-section">
         <h3>Your Final Job Selection</h3>
         {% if chosen_package_info %}
-            <p><span class="key">Your Preferred Role:</span> <span class="value">{{ preferred_title }}</span></p>
-            <p><span class="key">Your Chosen Package Wage:</span> <span class="value">€{{ chosen_package_info.wage }}/year</span></p>
-            <p><span class="key">Your Chosen Package Benefit:</span> <span class="value">{{ chosen_package_info.benefits_summary }}</span></p>
+            <p><span class="key">Your Preferred Role:</span> {{ preferred_title }}</p>
+            <p><span class="key">Your Chosen Package Wage:</span> €{{ chosen_package_info.wage }}</p>
+            <p><span class="key">Your Chosen Package Benefit(s):</span> {{ chosen_package_info.benefits_summary }}</p>
         {% else %}
             <p>You did not select a final job package.</p>
         {% endif %}
@@ -131,9 +127,9 @@
     <div class="summary-section">
         <h3>Time Spent Viewing Package Details</h3>
         <ul>
-            {% if parsed_time_log %}
-                {% for job_title, time_ms in parsed_time_log.items %}
-                    <li><span class="key">{{ job_title }}:</span> <span class="value">{{ time_ms }}ms</span></li>
+            {% if parsed_time_log and parsed_time_log.items %}
+                {% for job_tile, time_ms in parsed_time_log.items %}
+                    <li><span class="key">{{ job_tile }}:</span> <span class="value">{{ time_ms }} </span></li>
                 {% endfor %}
             {% else %}
                 <li>No time data was recorded.</li>
