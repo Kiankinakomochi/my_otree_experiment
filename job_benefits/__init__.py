@@ -116,13 +116,13 @@ class Player(BasePlayer):
     # --- Fields for ValuePerception page (Round 1) ---
     # These fields now store the *monthly* willingness to pay.
     willingness_to_pay_gym = models.CurrencyField(
-        label="What is the maximum amount you would be willing to pay per month for a premium gym membership (access to all facilities, classes, etc.)?",
+        label= "",
         blank=False,
         min=0,
         max=10000 / 12, # Adjusted max to be more reasonable for monthly
     )
     willingness_to_pay_bike = models.CurrencyField(
-        label="What is the maximum amount you would be willing to pay per month for a work bicycle (including maintenance and insurance)?",
+        label="",
         blank=False,
         min=0,
         max=10000 / 12, # Adjusted max to be more reasonable for monthly
