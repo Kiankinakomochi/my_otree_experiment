@@ -123,8 +123,8 @@
         <h3>Your Final Job Selection</h3>
         {% if chosen_package_info %}
             <p><span class="key">Your Preferred Role:</span> <span class="value">{{ preferred_title }}</span></p>
-            <p><span class="key">Your Chosen Package Wage:</span> <span class="value">€{{ chosen_package_info.wage }}/month</span></p>
-            <p><span class="key">Your Chosen Package Benefits:</span> <span class="value">{{ chosen_package_info.benefits }}</span></p>
+            <p><span class="key">Your Chosen Package Wage:</span> <span class="value">€{{ chosen_package_info.wage }}/year</span></p>
+            <p><span class="key">Your Chosen Package Benefit:</span> <span class="value">{{ chosen_package_info.benefits_summary }}</span></p>
         {% else %}
             <p>You did not select a final job package.</p>
         {% endif %}

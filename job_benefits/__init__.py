@@ -38,7 +38,7 @@ class Constants(BaseConstants):
         'Company E-Bike': 'Get a modern, high-quality e-bike for both your daily commute and personal use. This worry-free package includes all maintenance and insurance.',
         'Premium Gym Membership': 'Full access to a premium gym facility with classes and personal training options.',
         'Extra Vacation Days': 'Two additional days of paid leave beyond the standard allowance.',
-        'Professional Development Budget': 'An annual budget of €1,000 to be spent on approved training courses, conferences, or books.',
+        'Professional Development Budget': 'An annual budget to be spent on approved training courses, conferences, or books.',
         'Catered Lunch Program': 'Enjoy complimentary meals from a selection of local restaurants and delivery services several days a week.',
         'Home Office Setup': 'The company will provide you with a high-quality ergonomic chair, a large external monitor, and other accessories for a comfortable and productive home office.',
         'Flexible Wellness Program': 'Choose from a wide range of company-sponsored wellness activities that fit your lifestyle, such as yoga classes, meditation app subscriptions, or sports club fees.',
@@ -161,6 +161,75 @@ class Player(BasePlayer):
         blank=True
     )
     modal_time_log = models.StringField(blank=True)
+
+    def get_dynamic_job_packages(self):
+        """
+        Generates the personalized list of 4 job packages based on this player's
+        ranking and preferences from round 1. This function can be called from any page.
+        """
+        player_in_round_1 = self.in_round(1)
+
+        # Get the participant's ranking and preferred salary from round 1
+        ranked_benefits_str = player_in_round_1.field_maybe_none('benefit_ranking')
+        # Use a sensible default for salary if not provided
+        preferred_salary = player_in_round_1.field_maybe_none('preferred_salary') or Constants.BASE_SALARY
+        
+        # Use WTP as the "Numéraire" for salary sacrifice
+        wtp_sum = (player_in_round_1.field_maybe_none('willingness_to_pay_gym') or 0) + \
+                  (player_in_round_1.field_maybe_none('willingness_to_pay_bike') or 0)
+
+        # Get the preferred job title
+        preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
+        chosen_title = "General Position"
+        if preferred_job_index is not None and preferred_job_index < len(Constants.JOB_TILES):
+            chosen_title = Constants.JOB_TILES[preferred_job_index]['title']
+        
+        job_packages = []
+        
+        # Fallback in case ranking data is missing
+        if not ranked_benefits_str:
+            # You can define a more robust fallback here if needed
+            return [] 
+        
+        # Create the personalized tiers
+        ranked_benefits = ranked_benefits_str.split(',')
+        
+        tier1_salary = preferred_salary
+        tier4_salary = max(0, preferred_salary - wtp_sum)
+        salary_step = (tier1_salary - tier4_salary) / 3 if wtp_sum > 0 else 0
+        
+        salaries = [
+            round(tier1_salary),
+            round(tier1_salary - salary_step),
+            round(tier1_salary - 2 * salary_step),
+            round(tier4_salary)
+        ]
+        
+        num_ranked = len(ranked_benefits)
+        if num_ranked < 4: # Add a safeguard for very short rankings
+            return []
+
+        benefit_tiers = [
+            ranked_benefits[0],
+            ranked_benefits[1],
+            ranked_benefits[num_ranked - 3],
+            ranked_benefits[num_ranked - 2],
+        ]
+        
+        # Build the 4 personalized job tiles
+        for i in range(4):
+            benefit_name = benefit_tiers[3-i]
+            job_packages.append({
+                'title': chosen_title,
+                'wage': salaries[i],
+                'benefits_summary': [benefit_name], # Inversely matched
+                'index': i,
+                'benefit_details': {
+                    benefit_name: Constants.BENEFIT_DESCRIPTIONS.get(benefit_name, '')
+                }
+            })
+        
+        return job_packages
 
 
 # =============================================================================
@@ -286,89 +355,14 @@ class JobSelection(Page):
         return self.round_number == Constants.num_rounds
 
     def vars_for_template(self):
-        player_in_round_1 = self.in_round(1)
+        # The complex logic is now in the Player model. We just call the function.
+        job_packages_for_display = self.get_dynamic_job_packages()
 
-        # --- DYNAMIC TILE GENERATION LOGIC ---
-        
-        # 1. Get the participant's ranking and preferred salary from round 1
-        ranked_benefits_str = player_in_round_1.field_maybe_none('benefit_ranking')
-        preferred_salary = player_in_round_1.field_maybe_none('preferred_salary') or Constants.BASE_SALARY
-        
-        # Use WTP as the "Numéraire" for salary sacrifice
-        wtp_sum = (player_in_round_1.field_maybe_none('willingness_to_pay_gym') or 0) + \
-                  (player_in_round_1.field_maybe_none('willingness_to_pay_bike') or 0)
-
-        # Get the preferred job title
-        preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
-        chosen_title = "General Position"
-        if preferred_job_index is not None:
-            chosen_title = Constants.JOB_TILES[preferred_job_index]['title']
-        
-        # 1. Create packages for display with the consistent title
-        job_packages_for_display = []
-        
-        # Fallback in case ranking data is missing
-        if not ranked_benefits_str:
-             # If no ranking, show some default tiles (or handle as an error)
-             # Here, we revert to the old logic as a safe fallback.
-            for i, original_job in enumerate(Constants.JOB_TILES):
-                job_packages_for_display.append({
-                    'title': chosen_title,
-                    'wage': original_job['wage'],
-                    'benefits_summary': [b for b in original_job.get('benefits', [])],
-                    'index': i
-                })
-        else:
-            # 2. Create the personalized tiers
-            ranked_benefits = ranked_benefits_str.split(',')
-            
-            # Define salary tiers
-            tier1_salary = preferred_salary
-            # Prevent salary from going below zero if WTP is very high
-            tier4_salary = max(0, preferred_salary - wtp_sum)
-            salary_step = (tier1_salary - tier4_salary) / 3
-            
-            salaries = [
-                round(tier1_salary),
-                round(tier1_salary - salary_step),
-                round(tier1_salary - 2 * salary_step),
-                round(tier4_salary)
-            ]
-            
-            # Define benefit tiers from the player's ranking
-            # Tiers are: Top rank, second rank, third from bottom, second from bottom
-            # This creates a more interesting choice than just 1,2,7,8
-            num_ranked = len(ranked_benefits)
-            benefit_tiers = [
-                ranked_benefits[0],                   # Tier 1 Benefit (Rank #1)
-                ranked_benefits[1],                   # Tier 2 Benefit (Rank #2)
-                ranked_benefits[num_ranked - 3],    # Tier 3 Benefit (e.g., Rank #6 out of 8)
-                ranked_benefits[num_ranked - 2],    # Tier 4 Benefit (e.g., Rank #7 out of 8)
-            ]
-            
-            # 3. Build the 4 personalized job tiles
-            # Tile 1: Tier 1 Salary, Tier 4 Benefit
-            # Tile 2: Tier 2 Salary, Tier 3 Benefit
-            # etc.
-            for i in range(4):
-                job_packages_for_display.append({
-                    'title': chosen_title,
-                    'wage': salaries[i],
-                    'benefits_summary': [benefit_tiers[3-i]], # Inversely matched
-                    'index': i,
-                    'benefit_details': {
-                        benefit_tiers[3-i]: Constants.BENEFIT_DESCRIPTIONS.get(benefit_tiers[3-i], '')
-                    }
-                })
-
-        # The full data needs to be passed to the script for the modal pop-up
-        job_tiles_for_script = job_packages_for_display
-        
         return dict(
             # Data for displaying the tiles
             job_packages_for_display=job_packages_for_display,
             modal_time_log = self.field_maybe_none('modal_time_log'),
-            job_tiles_for_script=job_tiles_for_script,
+            job_tiles_for_script=job_packages_for_display
         )
 
 class ResultsSummary(Page):
@@ -407,21 +401,21 @@ class ResultsSummary(Page):
                 'bonus_info': bonus_info,
             })
             
-        # --- MODIFIED ---: Re-generating the chosen package info based on dynamic tiles
-        chosen_package_info = None
+        # --- THE FIX IS HERE ---
+        # 1. Regenerate the exact same list of tiles shown to the player by calling the new helper method.
+        job_packages_for_display = player_in_final_round.get_dynamic_job_packages()
+        
+        # 2. Safely get the chosen index and find the corresponding package info.
         final_package_index = player_in_final_round.field_maybe_none('chosen_job_package_index')
-        if final_package_index is not None:
-             # Since tiles are dynamic, we reconstruct the chosen tile's data for display
-             # This is a simplified reconstruction. For full data, one would need to rerun the generation logic.
-            job_packages_for_display = self.vars_for_template()['job_packages_for_display']
-            if final_package_index < len(job_packages_for_display):
-                chosen_package_info = job_packages_for_display[final_package_index]
-
+        chosen_package_info = None
+        if final_package_index is not None and final_package_index < len(job_packages_for_display):
+            chosen_package_info = job_packages_for_display[final_package_index]
+        
         time_log_data = player_in_final_round.field_maybe_none('modal_time_log')
         
         preferred_title = "Not chosen"
         preferred_job_index = player_in_round_1.field_maybe_none('chosen_job_tile')
-        if preferred_job_index is not None:
+        if preferred_job_index is not None and preferred_job_index < len(Constants.JOB_TILES):
             preferred_title = Constants.JOB_TILES[preferred_job_index]['title']
 
         parsed_time_log = None
