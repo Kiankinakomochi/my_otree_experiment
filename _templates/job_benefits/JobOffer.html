@@ -18,17 +18,17 @@
             {# ====== TREATMENT 1: CASH BONUS (TWO OFFERS) ===================== #}
             {# ================================================================= #}
             {% if treatment == 'Cash Bonus' %}
-                <p class="offer-intro-text">For each offer below, you can accept a cash bonus or reject the offer.</p>
+                <p class="offer-intro-text">For each offer below, you can accept an annual cash bonus or reject the offer.</p>
 
                 <div id="offer1-block" class="choice-block">
                     <h3>Offer 1: Cash Bonus</h3>
-                    <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_gym }}</strong>.</p>
+                    <p>In addition to your salary, you are offered an annual cash bonus of <strong>{{ wtp_gym }}</strong>.</p>
                     {% formfield player.accept_cash_gym  label="" %}
                 </div>
 
                 <div id="offer2-block" class="choice-block hidden-offer">
                     <h3>Offer 2: Cash Bonus</h3>
-                    <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_bike }}</strong>.</p>
+                    <p>In addition to your salary, you are offered an annual cash bonus of <strong>{{ wtp_bike }}</strong>.</p>
                     {% formfield player.accept_cash_bike  label="" %}
                 </div>
 
@@ -54,13 +54,13 @@
             {# ====== TREATMENT 3: CHOICE (TWO OFFERS) ========================= #}
             {# ================================================================= #}
             {% elif treatment == 'Choice' %}
-                <p class="offer-intro-text">For each offer below, you have three options: accept a cash bonus, accept the non-monetary benefit itself, or reject the offer.</p>
+                <p class="offer-intro-text">For each offer below, you have three options: accept an annual cash bonus, accept the non-monetary benefit itself, or reject the offer.</p>
 
                 <div id="offer1-block" class="choice-block">
                     <h3>Offer 1: Gym Membership or Cash</h3>
                     <label class="choice-label">Your choice for the Gym Membership offer:</label>
                     <div class="custom-controls">
-                        <div class="radio-option"><label><input type="radio" name="gym_choice" value="Cash" required> Accept a cash bonus of <strong>{{ wtp_gym }}</strong></label></div>
+                        <div class="radio-option"><label><input type="radio" name="gym_choice" value="Cash" required> Accept an annual cash bonus of <strong>{{ wtp_gym }}</strong></label></div>
                         <div class="radio-option"><label><input type="radio" name="gym_choice" value="Benefit" required> Accept the <strong>Premium Gym Membership</strong></label></div>
                         <div class="radio-option"><label><input type="radio" name="gym_choice" value="Reject" required> Reject this offer</label></div>
                     </div>
@@ -70,7 +70,7 @@
                     <h3>Offer 2: Work Bike or Cash</h3>
                     <label class="choice-label">Your choice for the Work Bike offer:</label>
                     <div class="custom-controls">
-                        <div class="radio-option"><label><input type="radio" name="bike_choice" value="Cash" required> Accept a cash bonus of <strong>{{ wtp_bike }}</strong></label></div>
+                        <div class="radio-option"><label><input type="radio" name="bike_choice" value="Cash" required> Accept a annual cash bonus of <strong>{{ wtp_bike }}</strong></label></div>
                         <div class="radio-option"><label><input type="radio" name="bike_choice" value="Benefit" required> Accept the <strong> Work Bike</strong></label></div>
                         <div class="radio-option"><label><input type="radio" name="bike_choice" value="Reject" required> Reject this offer</label></div>
                     </div>
