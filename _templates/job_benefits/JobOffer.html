@@ -2,89 +2,318 @@
 
 {% block content %}
 
-<div class="otree-content">
-    <h2>Job Offer - Round {{ player.round_number }}</h2>
-    <p class="instructions">
-        You are being considered for the position of <strong>{{ job_title }}</strong> 
-        with your preferred base salary of <strong>€{{ base_salary }}</strong> per month.
-        <br>
-        In this round, you will be presented with two independent offers. Please evaluate each one and make your decision.
-    </p>
+<div class="otree-content-wrapper">
+    <div class="otree-content-container">
+        <h2>Job Offer - Round {{ player.round_number }}</h2>
+        <p class="instructions">
+            You are being considered for the position of <strong>{{ job_title }}</strong>
+            with your preferred base salary of <strong>{{ base_salary }}</strong> per month.
+            <br>
+            In this round, you will be presented with up to two independent offers. Please evaluate each one and make your decision.
+        </p>
 
-    <form method="post">
+        <form method="post">
 
-        {# ================================================================= #}
-        {# ====== TREATMENT 1: CASH BONUS (TWO OFFERS) ===================== #}
-        {# ================================================================= #}
-        {% if treatment == 'Cash Bonus' %}
-            <p>For each offer below, you can accept a cash bonus (valued at your previously stated willingness-to-pay) or reject the offer.</p>
+            {# ================================================================= #}
+            {# ====== TREATMENT 1: CASH BONUS (TWO OFFERS) ===================== #}
+            {# ================================================================= #}
+            {% if treatment == 'Cash Bonus' %}
+                <p class="offer-intro-text">For each offer below, you can accept a cash bonus or reject the offer.</p>
 
-            <div class="choice-block">
-                <h3>Offer 1: Gym-Equivalent Cash Bonus</h3>
-                <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_gym }}</strong>.</p>
-                {% formfield player.accept_cash_gym %}
-            </div>
+                <div id="offer1-block" class="choice-block">
+                    <h3>Offer 1: Cash Bonus</h3>
+                    <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_gym }}</strong>.</p>
+                    {% formfield player.accept_cash_gym  label="" %}
+                </div>
 
-            <div class="choice-block">
-                <h3>Offer 2: Bike-Equivalent Cash Bonus</h3>
-                <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_bike }}</strong>.</p>
-                {% formfield player.accept_cash_bike %}
-            </div>
+                <div id="offer2-block" class="choice-block hidden-offer">
+                    <h3>Offer 2: Cash Bonus</h3>
+                    <p>In addition to your salary, you are offered a cash bonus of <strong>{{ wtp_bike }}</strong>.</p>
+                    {% formfield player.accept_cash_bike  label="" %}
+                </div>
 
-        {# ================================================================= #}
-        {# ====== TREATMENT 2: NON-MONETARY PERK (TWO OFFERS) ============== #}
-        {# ================================================================= #}
-        {% elif treatment == 'Non-Monetary Perk' %}
-            <p>For each offer below, you can accept the non-monetary benefit or reject the offer.</p>
+            {# ================================================================= #}
+            {# ====== TREATMENT 2: NON-MONETARY PERK (TWO OFFERS) ============== #}
+            {# ================================================================= #}
+            {% elif treatment == 'Non-Monetary Perk' %}
+                <p class="offer-intro-text">For each offer below, you can accept the non-monetary benefit or reject the offer.</p>
 
-            <div class="choice-block">
-                <h3>Offer 1: Gym Membership</h3>
-                <p>In addition to your salary, you are offered a <strong>Premium Gym Membership</strong>.</p>
-                {% formfield player.accept_perk_gym %}
-            </div>
+                <div id="offer1-block" class="choice-block">
+                    <h3>Offer 1: Gym Membership</h3>
+                    <p>In addition to your salary, you are offered a <strong>Premium Gym Membership</strong>.</p>
+                    {% formfield player.accept_perk_gym  label="" %}
+                </div>
 
-            <div class="choice-block">
-                <h3>Offer 2: Work Bike</h3>
-                <p>In addition to your salary, you are offered a <strong>Work Bike</strong> (including maintenance and insurance).</p>
-                {% formfield player.accept_perk_bike %}
-            </div>
+                <div id="offer2-block" class="choice-block hidden-offer">
+                    <h3>Offer 2: Work Bike</h3>
+                    <p>In addition to your salary, you are offered a <strong>Work Bike</strong> (including maintenance and insurance).</p>
+                    {% formfield player.accept_perk_bike  label="" %}
+                </div>
 
+            {# ================================================================= #}
+            {# ====== TREATMENT 3: CHOICE (TWO OFFERS) ========================= #}
+            {# ================================================================= #}
+            {% elif treatment == 'Choice' %}
+                <p class="offer-intro-text">For each offer below, you have three options: accept a cash bonus, accept the non-monetary benefit itself, or reject the offer.</p>
 
-        {# ================================================================= #}
-        {# ====== TREATMENT 3: CHOICE (TWO OFFERS) ========================= #}
-        {# ================================================================= #}
-        {% elif treatment == 'Choice' %}
-            <p>For each offer below, you have three options: accept a cash bonus (valued at your willingness-to-pay), accept the non-monetary benefit itself, or reject the offer.</p>
+                <div id="offer1-block" class="choice-block">
+                    <h3>Offer 1: Gym Membership or Cash</h3>
+                    <label class="choice-label">Your choice for the Gym Membership offer:</label>
+                    <div class="custom-controls">
+                        <div class="radio-option"><label><input type="radio" name="gym_choice" value="Cash" required> Accept a cash bonus of <strong>{{ wtp_gym }}</strong></label></div>
+                        <div class="radio-option"><label><input type="radio" name="gym_choice" value="Benefit" required> Accept the <strong>Premium Gym Membership</strong></label></div>
+                        <div class="radio-option"><label><input type="radio" name="gym_choice" value="Reject" required> Reject this offer</label></div>
+                    </div>
+                </div>
 
-            <div class="choice-block">
-                <h3>Offer 1: Gym Membership or Cash</h3>
-                {% formfield player.gym_choice  label='Your choice for the Gym Membership offer:' %}
-            </div>
-
-            <div class="choice-block">
-                <h3>Offer 2: Work Bike or Cash</h3>
-                {% formfield player.bike_choice  label='Your choice for the Work Bike offer:' %}
-            </div>
+                <div id="offer2-block" class="choice-block hidden-offer">
+                    <h3>Offer 2: Work Bike or Cash</h3>
+                    <label class="choice-label">Your choice for the Work Bike offer:</label>
+                    <div class="custom-controls">
+                        <div class="radio-option"><label><input type="radio" name="bike_choice" value="Cash" required> Accept a cash bonus of <strong>{{ wtp_bike }}</strong></label></div>
+                        <div class="radio-option"><label><input type="radio" name="bike_choice" value="Benefit" required> Accept the <strong>Work Bike</strong></label></div>
+                        <div class="radio-option"><label><input type="radio" name="bike_choice" value="Reject" required> Reject this offer</label></div>
+                    </div>
+                </div>
             {% endif %}
-        <hr>
-        <button type="submit" class="otree-btn-next btn btn-primary">Submit Decisions</button>
-    </form>
+
+            <hr class="section-divider">
+            <button type="submit" class="otree-btn-next custom-submit-btn">Submit Decisions</button>
+        </form>
+    </div>
 </div>
 
 <style>
-    .choice-block {
-        border: 1px solid #ccc;
-        padding: 20px;
-        margin-top: 20px;
-        border-radius: 5px;
-        background-color: #f9f9f9;
+    :root {
+        --primary-color: #007bff;
+        --secondary-color: #6c757d;
+        --accent-color: #28a745;
+        --text-color: #333;
+        --light-gray: #f8f9fa;
+        --medium-gray: #e9ecef;
+        --border-color: #dee2e6;
+        --card-background: #ffffff;
     }
+
+    body {
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--light-gray); /* Light background for the page */
+        margin: 0;
+        padding: 0;
+    }
+
+    .otree-content-wrapper {
+        display: flex;
+        justify-content: center;
+        padding: 30px 15px;
+    }
+
+    .otree-content-container {
+        background-color: var(--card-background);
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        max-width: 800px; /* Constrain content width */
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    h2 {
+        text-align: center;
+        color: var(--primary-color);
+        margin-bottom: 30px;
+        font-size: 2em;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    h3 {
+        color: var(--secondary-color);
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+        border-bottom: 2px solid var(--medium-gray);
+        padding-bottom: 10px;
+    }
+
     .instructions {
         text-align: center;
+        margin-bottom: 35px;
+        font-size: 1.15em;
+        color: #555;
+        line-height: 1.8;
+        background-color: var(--medium-gray);
+        padding: 15px 20px;
+        border-radius: 5px;
+        border-left: 5px solid var(--primary-color);
+    }
+
+    .offer-intro-text {
+        text-align: center;
+        font-size: 1.05em;
         margin-bottom: 25px;
+        color: #444;
+        font-style: italic;
+    }
+
+    .choice-block {
+        border: 1px solid var(--border-color);
+        padding: 25px;
+        margin-top: 25px;
+        border-radius: 8px;
+        background-color: var(--light-gray);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: opacity 0.5s ease-in-out, transform 0.3s ease-out;
+    }
+
+    .choice-block:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .choice-block p {
+        margin-bottom: 20px;
+        font-size: 1.05em;
+    }
+
+    /* Styles for the initially hidden offer */
+    .hidden-offer {
+        opacity: 0;
+        height: 0; /* Collapse height to prevent layout shift */
+        overflow: hidden;
+        margin-top: 0; /* Remove top margin when hidden */
+        padding-top: 0;
+        padding-bottom: 0;
+        border: none;
+    }
+
+    /* Styles for the custom radio buttons in 'Choice' treatment */
+    .choice-label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: var(--text-color);
         font-size: 1.1em;
+    }
+
+    .custom-controls {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        padding: 15px;
+    }
+
+    .radio-option {
+        margin-bottom: 10px;
+    }
+
+    .radio-option label {
+        display: flex; /* Use flexbox for better alignment */
+        align-items: center;
+        cursor: pointer;
+        padding: 8px 5px;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+    }
+
+    .radio-option label:hover {
+        background-color: var(--medium-gray);
+    }
+
+    .radio-option input[type="radio"] {
+        margin-right: 10px;
+        transform: scale(1.2); /* Slightly larger radio buttons */
+        cursor: pointer;
+    }
+
+    .section-divider {
+        border: 0;
+        height: 1px;
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+        margin: 40px 0;
+    }
+
+    .custom-submit-btn {
+        display: block;
+        width: auto; /* Adjust width to content */
+        margin: 0 auto; /* Center the button */
+        padding: 12px 30px;
+        font-size: 1.2em;
+        font-weight: bold;
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .custom-submit-btn:hover {
+        background-color: #218838; /* Darker green on hover */
+        transform: translateY(-2px);
+    }
+
+    .custom-submit-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 5px rgba(40, 167, 69, 0.2);
     }
 </style>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const offer1Block = document.getElementById('offer1-block');
+    const offer2Block = document.getElementById('offer2-block');
+
+    if (offer1Block && offer2Block) {
+        const offer1Inputs = offer1Block.querySelectorAll('input');
+
+        function revealOffer2() {
+            // Set height to auto temporarily to calculate scrollHeight
+            offer2Block.style.height = 'auto';
+            const naturalHeight = offer2Block.scrollHeight + 'px'; // Get the natural height of the content
+
+            // Reset height to 0 for transition start
+            offer2Block.style.height = '0';
+            offer2Block.style.overflow = 'hidden';
+            offer2Block.style.border = '1px solid var(--border-color)'; /* Reapply border */
+            offer2Block.style.paddingTop = '25px'; /* Reapply padding */
+            offer2Block.style.paddingBottom = '25px';
+            offer2Block.style.marginTop = '25px'; /* Reapply margin */
+
+            // Ensure reflow for transition to work
+            void offer2Block.offsetWidth;
+
+            // Apply transition properties
+            offer2Block.style.transition = 'opacity 0.7s ease-in-out, height 0.7s ease-in-out, padding 0.7s ease-in-out, margin-top 0.7s ease-in-out, border-width 0.7s ease-in-out';
+            
+            // Set target properties
+            offer2Block.style.opacity = '1';
+            offer2Block.style.height = naturalHeight;
+
+            // After transition, remove explicit height to allow content to grow/shrink naturally
+            offer2Block.addEventListener('transitionend', function handler() {
+                offer2Block.style.height = ''; // Remove explicit height
+                offer2Block.style.overflow = ''; // Allow overflow
+                offer2Block.style.transition = 'opacity 0.5s ease-in-out'; // Reset transition for future opacity changes
+                offer2Block.removeEventListener('transitionend', handler);
+            });
+
+            offer2Block.classList.remove('hidden-offer');
+
+            // Remove event listeners after revealing
+            offer1Inputs.forEach(input => {
+                input.removeEventListener('change', revealOffer2);
+            });
+        }
+
+        offer1Inputs.forEach(input => {
+            input.addEventListener('change', revealOffer2);
+        });
+    }
+});
+</script>
 
 {% endblock %}
